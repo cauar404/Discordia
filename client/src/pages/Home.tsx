@@ -64,6 +64,10 @@ function PendingApprovalScreen({ onRedeem, onLogout, pending }: { onRedeem: (cod
   return <main className="grid min-h-screen place-items-center bg-[#0e1118] px-6"><section className="max-w-md rounded-3xl border border-white/10 bg-[#171c27] p-8 text-center"><ShieldCheck className="mx-auto mb-4 size-9 text-[#cbb38a]" /><h1 className="text-xl font-semibold text-white">Acesso em aprovação</h1><p className="mt-3 text-sm leading-6 text-slate-400">Sua conta foi autenticada, mas ainda precisa receber um convite válido ou ser aprovada por um administrador.</p><form className="mt-6 space-y-3" onSubmit={event => { event.preventDefault(); if (code.trim()) onRedeem(code.trim()); }}><Input value={code} onChange={event => setCode(event.target.value)} placeholder="Cole o código de convite" className="border-white/10 bg-white/5 text-center text-white placeholder:text-slate-500" /><Button type="submit" disabled={!code.trim() || pending} className="w-full bg-[#cbb38a] text-[#141820] hover:bg-[#dfca9c]">{pending && <Loader2 className="size-4 animate-spin" />}Validar convite</Button></form><Button variant="outline" className="mt-3 border-white/10 bg-white/5 text-slate-200 hover:bg-white/10" onClick={onLogout}>Sair</Button></section></main>;
 }
 
+function BootstrapErrorScreen({ onRetry, onLogout }: { onRetry: () => void; onLogout: () => void }) {
+  return <main className="grid min-h-screen place-items-center bg-[#0e1118] px-6"><section className="max-w-md rounded-3xl border border-white/10 bg-[#171c27] p-8 text-center"><Info className="mx-auto mb-4 size-9 text-[#cbb38a]" /><h1 className="text-xl font-semibold text-white">Não foi possível abrir o seu espaço.</h1><p className="mt-3 text-sm leading-6 text-slate-400">A conexão com o Círculo demorou mais que o esperado. Você pode tentar novamente sem perder a sua conta.</p><div className="mt-6 flex flex-wrap justify-center gap-3"><Button onClick={onRetry} className="bg-[#cbb38a] text-[#141820] hover:bg-[#dfca9c]">Tentar novamente</Button><Button variant="outline" className="border-white/10 bg-white/5 text-slate-100 hover:bg-white/10" onClick={onLogout}>Sair</Button></div></section></main>;
+}
+
 export default function Home() {
   const { user, loading, isAuthenticated, logout } = useAuth();
   const utils = trpc.useUtils();
@@ -194,6 +198,7 @@ export default function Home() {
 
   if (loading) return <main className="grid min-h-screen place-items-center bg-[#0e1118]"><Loader2 className="size-6 animate-spin text-[#cbb38a]" /></main>;
   if (!isAuthenticated) return <LoginScreen />;
+  if (profile.error || communities.error) return <BootstrapErrorScreen onRetry={() => { void profile.refetch(); void communities.refetch(); }} onLogout={() => { void logout(); }} />;
   if (profile.isLoading || communities.isLoading) return <main className="grid min-h-screen place-items-center bg-[#0e1118]"><div className="flex items-center gap-3 text-sm text-slate-400"><Loader2 className="size-4 animate-spin text-[#cbb38a]" /> Preparando o seu espaço…</div></main>;
   if (redeemInvite.isPending) return <main className="grid min-h-screen place-items-center bg-[#0e1118]"><div className="flex items-center gap-3 text-sm text-slate-400"><Loader2 className="size-4 animate-spin text-[#cbb38a]" /> Validando convite privado…</div></main>;
   if (profile.error) return <LoginScreen />;

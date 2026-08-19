@@ -79,3 +79,5 @@
 - [x] Aplicar restrições de captura e codificação compatíveis com a preferência de 60 fps e comunicar limitações impostas pelo navegador e pela rede.
 - [ ] Validar visualmente a interface de chamada com compartilhamento ativo em desktop e mobile, confirmando que palco, opções e controles permanecem acessíveis.
 - [ ] Capturar evidências verificáveis da tela de chamada com transmissão ativa em diferentes viewports e registrar o resultado antes de concluir os ajustes de layout.
+- [x] Diagnosticar e corrigir o carregamento infinito que impede a entrada no Círculo após a atualização publicada de chamadas.
+- [ ] Implantar a correção de timeout e recuperação do bootstrap no Render e confirmar que o login abre o Círculo sem carregamento infinito.

@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
+import { createRequestTimeout } from "@shared/requestTimeout";
 import App from "./App";
 import "./index.css";
 
@@ -63,10 +64,12 @@ const trpcClient = trpc.createClient({
         return {};
       },
       fetch(input, init) {
+        const timeout = createRequestTimeout(init?.signal);
         return globalThis.fetch(input, {
           ...(init ?? {}),
           credentials: "include",
-        });
+          signal: timeout.signal,
+        }).finally(timeout.dispose);
       },
     }),
   ],

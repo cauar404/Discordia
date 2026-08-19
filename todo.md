@@ -106,7 +106,7 @@
 - [x] Mostrar múltiplas transmissões como miniaturas e permitir expandir uma escolhida no palco, alternar a transmissão visualizada e abrir a transmissão em tela cheia.
 - [ ] Adicionar menus contextuais ao clicar com o botão direito em participante e transmissão para volume individual, silenciamento, parar de assistir e controles de transmissão aplicáveis.
 - [x] Preservar a opção nativa de troca de fonte de compartilhamento quando o navegador suportar surface switching e explicar o limite quando não houver suporte.
-- [ ] Ajustar a paleta e os espaçamentos da sala para uma linguagem de interface escura, clara e responsiva, sem reutilizar marcas ou ativos de terceiros.
+- [x] Ajustar a paleta e os espaçamentos da sala para uma linguagem de interface escura, clara e responsiva, sem reutilizar marcas ou ativos de terceiros.
 - [x] Remover o palco grande automático da transmissão e exibir a tela compartilhada inicialmente como cartão integrado à grade de participantes.
 - [x] Permitir expandir uma transmissão por clique e entrar em tela cheia sem deslocar os controles ou exigir redução do zoom do navegador.
 - [ ] Validar em desktop, tablet e mobile que a grade, as transmissões e os controles permanecem acessíveis com compartilhamento ativo.
@@ -114,3 +114,10 @@
 - [ ] Validar visualmente a sala de chamada ativa em desktop, tablet e mobile, confirmando que dock, palco expandido e painel de opções permanecem acessíveis com compartilhamento de tela aberto.
 - [ ] Capturar evidências verificáveis da chamada ativa com transmissões na grade e palco expandido, incluindo pelo menos desktop e mobile.
 - [ ] Revisar e ajustar a hierarquia visual e o polimento da nova grade da chamada após validação com mídia ativa, caso algum viewport perca legibilidade ou acesso aos controles.
+- [x] Compactar a grade de participantes para reduzir espaços vazios e manter cartões proporcionais à quantidade de pessoas em chamadas largas.
+- [x] Refinar tipografia, espaçamentos, contraste e superfícies da sala para uma hierarquia visual mais madura e consistente.
+- [ ] Reposicionar o dock de controles e tornar as configurações menos dominantes, mantendo ambos acessíveis sem competir com a mídia principal.
+- [ ] Validar visualmente o refinamento da chamada com estados de um participante, múltiplos participantes e configurações abertas antes de publicar.
+- [ ] Validar visualmente a sala de chamada ativa com palco expandido e configurações abertas, confirmando que dock e painel continuam acessíveis em desktop e mobile.
+- [ ] Ajustar o posicionamento do dock e/ou do painel de configurações caso a validação com mídia ativa revele sobreposição, perda de acesso ou competição visual com a transmissão.
+- [x] Sanitizar falhas de cadastro e login para nunca expor consultas SQL, parâmetros ou hashes de senha no navegador.

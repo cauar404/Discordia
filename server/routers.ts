@@ -9,6 +9,7 @@ import { users } from "../drizzle/schema";
 import { getDb } from "./db";
 import { consumeRateLimit } from "./rateLimit";
 import { hashPassword, verifyPassword } from "./localAuth";
+import { rethrowSafeAuthError } from "./authErrors";
 import { ensureProfile, platformRouter } from "./routers/platform";
 import { sdk } from "./_core/sdk";
 import { socialRouter } from "./routers/social";
@@ -41,17 +42,21 @@ export const appRouter = router({
         assertAccountRateLimit(ctx, "register");
         const db = await getDb();
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Banco de dados indisponível. Verifique a configuração do serviço." });
-        const [existing] = await db.select({ id: users.id }).from(users).where(eq(users.email, input.email)).limit(1);
-        if (existing) throw new TRPCError({ code: "CONFLICT", message: "Já existe uma conta com este e-mail." });
-        const openId = `local_${crypto.randomUUID().replaceAll("-", "")}`;
-        const passwordHash = await hashPassword(input.password);
-        const [created] = await db
-          .insert(users)
-          .values({ openId, name: input.displayName, email: input.email, passwordHash, loginMethod: "password", role: "user", accessState: "approved", lastSignedIn: new Date() })
-          .$returningId();
-        await ensureProfile(db, { id: created.id, name: input.displayName });
-        await createLocalSession(ctx, openId, input.displayName);
-        return { success: true } as const;
+        try {
+          const [existing] = await db.select({ id: users.id }).from(users).where(eq(users.email, input.email)).limit(1);
+          if (existing) throw new TRPCError({ code: "CONFLICT", message: "Já existe uma conta com este e-mail." });
+          const openId = `local_${crypto.randomUUID().replaceAll("-", "")}`;
+          const passwordHash = await hashPassword(input.password);
+          const [created] = await db
+            .insert(users)
+            .values({ openId, name: input.displayName, email: input.email, passwordHash, loginMethod: "password", role: "user", accessState: "approved", lastSignedIn: new Date() })
+            .$returningId();
+          await ensureProfile(db, { id: created.id, name: input.displayName });
+          await createLocalSession(ctx, openId, input.displayName);
+          return { success: true } as const;
+        } catch (error) {
+          return rethrowSafeAuthError(error, "Não foi possível criar sua conta agora. Tente novamente em instantes.");
+        }
       }),
     login: publicProcedure
       .input(accountInput)
@@ -59,15 +64,19 @@ export const appRouter = router({
         assertAccountRateLimit(ctx, "login");
         const db = await getDb();
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Banco de dados indisponível. Verifique a configuração do serviço." });
-        const [account] = await db.select().from(users).where(and(eq(users.email, input.email), eq(users.loginMethod, "password"))).limit(1);
-        if (!account || !(await verifyPassword(input.password, account.passwordHash))) {
-          throw new TRPCError({ code: "UNAUTHORIZED", message: "E-mail ou senha inválidos." });
+        try {
+          const [account] = await db.select().from(users).where(and(eq(users.email, input.email), eq(users.loginMethod, "password"))).limit(1);
+          if (!account || !(await verifyPassword(input.password, account.passwordHash))) {
+            throw new TRPCError({ code: "UNAUTHORIZED", message: "E-mail ou senha inválidos." });
+          }
+          if (account.accessState === "suspended") throw new TRPCError({ code: "FORBIDDEN", message: "Esta conta está suspensa." });
+          await db.update(users).set({ lastSignedIn: new Date() }).where(eq(users.id, account.id));
+          await ensureProfile(db, { id: account.id, name: account.name });
+          await createLocalSession(ctx, account.openId, account.name ?? "Membro");
+          return { success: true } as const;
+        } catch (error) {
+          return rethrowSafeAuthError(error, "Não foi possível entrar agora. Tente novamente em instantes.");
         }
-        if (account.accessState === "suspended") throw new TRPCError({ code: "FORBIDDEN", message: "Esta conta está suspensa." });
-        await db.update(users).set({ lastSignedIn: new Date() }).where(eq(users.id, account.id));
-        await ensureProfile(db, { id: account.id, name: account.name });
-        await createLocalSession(ctx, account.openId, account.name ?? "Membro");
-        return { success: true } as const;
       }),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);

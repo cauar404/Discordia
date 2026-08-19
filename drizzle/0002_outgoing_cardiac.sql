@@ -1,3 +1,4 @@
-ALTER TABLE `directConversationMembers` DROP FOREIGN KEY `directConversationMembers_conversationId_directConversations_id_fk`;
---> statement-breakpoint
-ALTER TABLE `directConversationMembers` ADD CONSTRAINT `dcm_conversation_fk` FOREIGN KEY (`conversationId`) REFERENCES `directConversations`(`id`) ON DELETE cascade ON UPDATE no action;
+-- The dcm_conversation_fk constraint is already created in 0001_productive_microbe.
+-- Keep this historic migration as an explicit no-op so a new TiDB database does not
+-- attempt to drop a legacy foreign-key name that was never created.
+SELECT 1;

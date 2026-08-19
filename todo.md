@@ -59,3 +59,11 @@
 - [x] Permitir que usuários autenticados criem as próprias comunidades privadas e entrem em outras por convite.
 - [x] Remover o fluxo de bootstrap administrativo por código da interface e do servidor.
 - [x] Diagnosticar o banco de dados indisponível no Render e documentar a configuração externa necessária para manter contas e comunidades persistentes.
+- [ ] Criar e conectar um banco MySQL persistente compatível ao serviço do Render, aplicar as migrações e validar o cadastro local publicado.
+- [x] Configurar um banco MySQL compatível em plano gratuito para a publicação temporária, sem serviço de banco pago no Render.
+- [x] Corrigir a conexão TLS entre o Render e o TiDB após o erro de banco indisponível na publicação.
+- [ ] Remover a inicialização OAuth residual e expor apenas diagnóstico seguro de disponibilidade de banco no ambiente Render.
+- [ ] Executar as migrações Drizzle no TiDB pelo processo de build do Render para criar as tabelas da publicação.
+- [x] Corrigir a migração Drizzle que remove uma chave estrangeira inexistente no TiDB vazio e bloqueia a publicação.
+- [ ] Disparar novo deploy no Render com a migração 0002 corrigida e registrar o resultado da publicação.
+- [ ] Validar que o build do Render executa pnpm db:migrate com sucesso no TiDB e que o cadastro/login publicado funciona após o deploy.

@@ -35,3 +35,15 @@ Fonte: https://docs.livekit.io/transport/media/screenshare/
 O cliente agora compartilha uma única configuração Socket.IO para mensagens, presença e chamadas: WebSocket direto, tentativa de conexão de 10 segundos e reconexão inicial de 500 ms com teto de 3 segundos. A estratégia evita a negociação inicial por long-polling e reduz o tempo de recuperação após pequenas quedas, mas não altera a distância entre o usuário, o Render e a região do LiveKit.
 
 O módulo LiveKit também é carregado somente quando uma chamada é aberta. Isso reduziu o pacote inicial do aplicativo de aproximadamente 1,58 MB para 0,95 MB (minificado), transferindo cerca de 0,63 MB para o carregamento sob demanda da chamada. Essa divisão reduz o tempo de entrada e a competição por recursos antes de o usuário entrar em uma sala.
+
+## Grade e palco de transmissões
+
+De acordo com a documentação do LiveKit, o **adaptive stream** acompanha tamanho e visibilidade dos elementos de vídeo, selecionando a camada simulcast apropriada e pausando no servidor as trilhas ocultas até que voltem a ser visíveis. A grade do Círculo deixa uma transmissão selecionada no palco e preserva as demais como miniaturas para aproveitar essa adaptação. No SDK JavaScript, o elemento de vídeo deve receber a trilha para que o mecanismo funcione.
+
+Fonte: https://docs.livekit.io/transport/media/subscribe/
+
+## Estabilidade de transmissão
+
+A documentação do LiveKit explica que simulcast publica versões de uma mesma trilha com perfis de bitrate distintos para que o servidor encaminhe a camada mais adequada à banda e à resolução de cada pessoa. Com dynacast, camadas não consumidas podem ser pausadas, reduzindo uso de banda. Os perfis equilibrados de 30 fps do Círculo são mantidos como alternativa aos modos de 60 fps para priorizar continuidade quando vídeo ou tela compartilhada apresentarem travamentos.
+
+Fonte: https://docs.livekit.io/transport/media/advanced/

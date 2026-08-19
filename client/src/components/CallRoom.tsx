@@ -1,8 +1,9 @@
-import { cn } from "@/lib/utils";
-import { AudioTrack, VideoTrack, useLocalParticipant, useParticipants, useTracks, type TrackReference } from "@livekit/components-react";
+import { AudioTrack, VideoTrack, useConnectionState, useLocalParticipant, useParticipants, useTracks, type TrackReference } from "@livekit/components-react";
 import { AudioLines, ChevronDown, Gauge, Keyboard, Maximize2, Mic, MicOff, Minimize2, MonitorUp, PhoneOff, Radio, ScreenShare, Settings2, SlidersHorizontal, Users, Video, VideoOff, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AudioPresets, Track } from "livekit-client";
+import { AudioPresets, ConnectionState, Track } from "livekit-client";
+import { cn } from "@/lib/utils";
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuLabel, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { getScreenSharePublishOptions, screenShareProfiles, type ScreenShareQuality } from "@shared/callQuality";
 import { getScreenShareAudioOptions } from "@shared/callAudio";
 import { audioMixKey, deserializeIndividualAudioMixes, INDIVIDUAL_AUDIO_MIX_STORAGE_KEY, normalizeIndividualAudioMix, serializeIndividualAudioMixes, updateIndividualAudioMix, type IndividualAudioMix, type IndividualAudioMixes } from "@shared/callMixer";
@@ -34,50 +35,73 @@ function trackKey(track: TrackReference) {
   return audioMixKey(track.participant.identity, String(track.source), track.publication?.trackSid);
 }
 
-function sourceLabel(track: TrackReference) {
-  return track.source === Track.Source.ScreenShareAudio ? "Áudio da transmissão" : "Voz";
+function VolumePanel({ label, mix, onMixChange, unavailable = false }: { label: string; mix: IndividualAudioMix; onMixChange: (update: Partial<IndividualAudioMix>) => void; unavailable?: boolean }) {
+  return <div className="call-context-volume" onPointerDown={event => event.stopPropagation()}>
+    <div className="call-context-volume-heading"><span>{label}</span><strong>{unavailable ? "Sem áudio" : `${Math.round(mix.volume * 100)}%`}</strong></div>
+    <div className="call-context-volume-controls">
+      <button type="button" className={cn("call-mini-mute", mix.muted && "is-muted")} onClick={() => onMixChange({ muted: !mix.muted })} disabled={unavailable} aria-label={mix.muted ? "Ativar áudio" : "Silenciar áudio"}>{mix.muted ? <VolumeX className="size-3.5" /> : <Volume2 className="size-3.5" />}</button>
+      <input type="range" min="0" max="100" step="1" value={Math.round(mix.volume * 100)} onChange={event => onMixChange({ volume: Number(event.target.value) / 100 })} disabled={unavailable} aria-label={label} />
+    </div>
+  </div>;
 }
 
 function ParticipantCard({ participant, cameraTrack, voiceTrack, mix, onMixChange }: { participant: { identity: string; name?: string; isSpeaking?: boolean }; cameraTrack?: TrackReference; voiceTrack?: TrackReference; mix: IndividualAudioMix; onMixChange: (update: Partial<IndividualAudioMix>) => void }) {
   const name = displayName(participant);
-  return <article className={cn("call-participant-card", participant.isSpeaking && "is-speaking")}>
-    <div className="call-participant-video">
-      {cameraTrack ? <VideoTrack trackRef={cameraTrack} className="size-full object-cover" /> : <div className="call-avatar" aria-label={`${name}, câmera desativada`}>{initials(name)}</div>}
-      <div className="call-participant-meta"><span className={cn("call-speaking-dot", participant.isSpeaking && "is-active")} /><strong>{name}</strong></div>
-      {!cameraTrack && <span className="call-camera-off"><VideoOff className="size-3.5" /> Câmera desligada</span>}
-    </div>
-    <div className="call-person-mixer">
-      <div><span>Voz</span><strong>{Math.round(mix.volume * 100)}%</strong></div>
-      <button type="button" className={cn("call-mini-mute", mix.muted && "is-muted")} onClick={() => onMixChange({ muted: !mix.muted })} aria-label={mix.muted ? `Ativar voz de ${name}` : `Silenciar voz de ${name}`} title={mix.muted ? "Ativar voz" : "Silenciar voz"}>{mix.muted ? <VolumeX className="size-3.5" /> : <Volume2 className="size-3.5" />}</button>
-      <label className="sr-only" htmlFor={`voice-volume-${participant.identity}`}>Volume da voz de {name}</label>
-      <input id={`voice-volume-${participant.identity}`} type="range" min="0" max="100" step="1" value={Math.round(mix.volume * 100)} onChange={event => onMixChange({ volume: Number(event.target.value) / 100 })} disabled={!voiceTrack} />
-    </div>
-  </article>;
+  return <ContextMenu>
+    <ContextMenuTrigger asChild>
+      <article className={cn("call-participant-card", participant.isSpeaking && "is-speaking")} title={`Clique com o botão direito para configurar a voz de ${name}`}>
+        <div className="call-participant-video">
+          {cameraTrack ? <VideoTrack trackRef={cameraTrack} className="size-full object-cover" /> : <div className="call-avatar" aria-label={`${name}, câmera desativada`}>{initials(name)}</div>}
+          <div className="call-participant-meta"><span className={cn("call-speaking-dot", participant.isSpeaking && "is-active")} /><strong>{name}</strong><span className="call-participant-volume">{mix.muted ? <VolumeX className="size-3" /> : <Volume2 className="size-3" />}{Math.round(mix.volume * 100)}%</span></div>
+          {!cameraTrack && <span className="call-camera-off"><VideoOff className="size-3.5" /> Câmera desligada</span>}
+        </div>
+      </article>
+    </ContextMenuTrigger>
+    <ContextMenuContent className="call-context-menu">
+      <ContextMenuLabel>Voz de {name}</ContextMenuLabel>
+      <VolumePanel label={`Volume de ${name}`} mix={mix} onMixChange={onMixChange} unavailable={!voiceTrack} />
+      <ContextMenuSeparator />
+      <ContextMenuItem disabled={!voiceTrack} onSelect={() => onMixChange({ muted: !mix.muted })}>{mix.muted ? "Ativar voz" : "Silenciar voz"}</ContextMenuItem>
+    </ContextMenuContent>
+  </ContextMenu>;
 }
 
-function StreamAudioMixer({ track, mix, onMixChange }: { track: TrackReference; mix: IndividualAudioMix; onMixChange: (update: Partial<IndividualAudioMix>) => void }) {
+function ScreenShareCard({ track, audioTrack, mix, selected, onSelect, onStopWatching, onFullscreen, onMixChange, onSourceSwitchHelp, isLocal }: { track: TrackReference; audioTrack?: TrackReference; mix: IndividualAudioMix; selected: boolean; onSelect: () => void; onStopWatching: () => void; onFullscreen: () => void; onMixChange: (update: Partial<IndividualAudioMix>) => void; onSourceSwitchHelp: () => void; isLocal: boolean }) {
   const name = displayName(track.participant);
-  return <div className="call-stream-audio-row">
-    <div className="call-stream-audio-title"><AudioLines className="size-4" /><span><strong>{name}</strong><small>{sourceLabel(track)}</small></span></div>
-    <button type="button" className={cn("call-mini-mute", mix.muted && "is-muted")} onClick={() => onMixChange({ muted: !mix.muted })} aria-label={mix.muted ? `Ativar áudio da transmissão de ${name}` : `Silenciar áudio da transmissão de ${name}`}>{mix.muted ? <VolumeX className="size-3.5" /> : <Volume2 className="size-3.5" />}</button>
-    <label className="sr-only" htmlFor={`stream-volume-${trackKey(track)}`}>Volume da transmissão de {name}</label>
-    <input id={`stream-volume-${trackKey(track)}`} type="range" min="0" max="100" step="1" value={Math.round(mix.volume * 100)} onChange={event => onMixChange({ volume: Number(event.target.value) / 100 })} />
-    <output>{Math.round(mix.volume * 100)}%</output>
-  </div>;
+  return <ContextMenu>
+    <ContextMenuTrigger asChild>
+      <button type="button" className={cn("call-share-tile", selected && "is-selected")} onClick={onSelect} aria-pressed={selected} aria-label={`Abrir transmissão de ${name}`}>
+        <VideoTrack trackRef={track} className="call-share-tile-video" />
+        <span className="call-share-live"><span /> AO VIVO</span>
+        <span className="call-share-tile-label"><MonitorUp className="size-3.5" /><strong>{name}</strong>{audioTrack && <AudioLines className="size-3.5" />}</span>
+      </button>
+    </ContextMenuTrigger>
+    <ContextMenuContent className="call-context-menu">
+      <ContextMenuLabel>Transmissão de {name}</ContextMenuLabel>
+      <VolumePanel label="Áudio da transmissão" mix={mix} onMixChange={onMixChange} unavailable={!audioTrack} />
+      <ContextMenuSeparator />
+      <ContextMenuItem onSelect={onSelect}>Abrir no palco</ContextMenuItem>
+      <ContextMenuItem onSelect={onFullscreen}>Abrir em tela cheia</ContextMenuItem>
+      <ContextMenuItem onSelect={onStopWatching}>Parar de assistir</ContextMenuItem>
+      {isLocal && <><ContextMenuSeparator /><ContextMenuItem onSelect={onSourceSwitchHelp}>Trocar fonte de transmissão</ContextMenuItem></>}
+    </ContextMenuContent>
+  </ContextMenu>;
 }
 
 export function CallRoom({ kind, onLeave, voiceVideoSettings, onVoiceVideoSettingsChange }: { kind: CallKind; onLeave: () => void | Promise<void>; voiceVideoSettings?: VoiceVideoSettings; onVoiceVideoSettingsChange?: (settings: VoiceVideoSettings) => void | Promise<unknown> }) {
+  const connectionState = useConnectionState();
   const participants = useParticipants();
   const mediaTracks = useTracks([Track.Source.Camera, Track.Source.ScreenShare]);
   const audioTracks = useTracks([Track.Source.Microphone, Track.Source.ScreenShareAudio, Track.Source.Unknown]).filter((track): track is TrackReference => track.publication?.kind === Track.Kind.Audio);
   const { localParticipant, isCameraEnabled, isMicrophoneEnabled, isScreenShareEnabled } = useLocalParticipant();
-  const [quality, setQuality] = useState<ScreenShareQuality>("1080p60");
+  const [quality, setQuality] = useState<ScreenShareQuality>("540p30");
   const [includeScreenShareAudio, setIncludeScreenShareAudio] = useState(true);
   const [activeQuality, setActiveQuality] = useState<ScreenShareQuality | null>(null);
   const [isUpdatingShare, setIsUpdatingShare] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
   const [displayCaptureBlocked, setDisplayCaptureBlocked] = useState(false);
   const [isStageFullscreen, setIsStageFullscreen] = useState(false);
+  const [focusedScreenShareKey, setFocusedScreenShareKey] = useState<string | null>(null);
   const [pushToTalkEnabled, setPushToTalkEnabled] = useState(voiceVideoSettings?.pushToTalk === true);
   const [pushToTalkKey, setPushToTalkKey] = useState(typeof voiceVideoSettings?.pushToTalkKey === "string" ? voiceVideoSettings.pushToTalkKey : "Space");
   const [isChoosingPushToTalkKey, setIsChoosingPushToTalkKey] = useState(false);
@@ -90,15 +114,17 @@ export function CallRoom({ kind, onLeave, voiceVideoSettings, onVoiceVideoSettin
   const tracks = useMemo(() => mediaTracks.filter((track): track is TrackReference => track.publication !== undefined), [mediaTracks]);
   const cameraTracks = useMemo(() => new Map(tracks.filter(track => track.source === Track.Source.Camera).map(track => [track.participant.identity, track])), [tracks]);
   const screenShares = useMemo(() => tracks.filter(track => track.source === Track.Source.ScreenShare), [tracks]);
-  const primaryScreenShare = screenShares[0];
+  const focusedScreenShare = useMemo(() => screenShares.find(track => trackKey(track) === focusedScreenShareKey), [focusedScreenShareKey, screenShares]);
   const remoteAudioTracks = useMemo(() => audioTracks.filter(track => track.participant.identity !== localParticipant.identity), [audioTracks, localParticipant.identity]);
   const voiceTracks = useMemo(() => new Map(remoteAudioTracks.filter(track => track.source === Track.Source.Microphone).map(track => [track.participant.identity, track])), [remoteAudioTracks]);
   const screenShareAudioTracks = useMemo(() => remoteAudioTracks.filter(track => track.source === Track.Source.ScreenShareAudio), [remoteAudioTracks]);
 
   useEffect(() => {
+    if (focusedScreenShareKey && !screenShares.some(track => trackKey(track) === focusedScreenShareKey)) setFocusedScreenShareKey(null);
+  }, [focusedScreenShareKey, screenShares]);
+  useEffect(() => {
     try { window.localStorage.setItem(INDIVIDUAL_AUDIO_MIX_STORAGE_KEY, serializeIndividualAudioMixes(audioMixes)); } catch { /* armazenamento local pode estar indisponível */ }
   }, [audioMixes]);
-
   useEffect(() => { if (!isScreenShareEnabled) setActiveQuality(null); }, [isScreenShareEnabled]);
   useEffect(() => {
     setPushToTalkEnabled(voiceVideoSettings?.pushToTalk === true);
@@ -170,6 +196,14 @@ export function CallRoom({ kind, onLeave, voiceVideoSettings, onVoiceVideoSettin
     setShareError(null);
     try { if (document.fullscreenElement === stage) await document.exitFullscreen(); else if ("requestFullscreen" in stage) await stage.requestFullscreen(); else setShareError("Seu navegador não oferece tela cheia para esta visualização."); } catch { setShareError("Não foi possível alternar a tela cheia. Verifique a permissão do navegador."); }
   }
+  function openScreenShare(track: TrackReference) { setFocusedScreenShareKey(trackKey(track)); }
+  function openScreenShareFullscreen(track: TrackReference) {
+    openScreenShare(track);
+    window.requestAnimationFrame(() => { void toggleStageFullscreen(); });
+  }
+  function showSourceSwitchHelp() {
+    setShareError("Para trocar a fonte sem encerrar a transmissão, use o seletor nativo “Compartilhar esta guia” exibido pelo navegador. Se ele não aparecer, seu navegador exigirá iniciar um novo compartilhamento.");
+  }
   async function togglePushToTalk() {
     const nextEnabled = !pushToTalkEnabled;
     setPushToTalkEnabled(nextEnabled); setIsChoosingPushToTalkKey(false);
@@ -178,21 +212,24 @@ export function CallRoom({ kind, onLeave, voiceVideoSettings, onVoiceVideoSettin
   function mixFor(track?: TrackReference) { return track ? normalizeIndividualAudioMix(audioMixes[trackKey(track)]) : normalizeIndividualAudioMix(); }
   function updateMix(track: TrackReference, update: Partial<IndividualAudioMix>) { setAudioMixes(current => updateIndividualAudioMix(current, trackKey(track), update)); }
 
-  const stageLabel = primaryScreenShare ? `${displayName(primaryScreenShare.participant)} está compartilhando a tela` : "Palco da chamada";
-  return <section className={cn("call-room", primaryScreenShare && "has-screen-share")} aria-label="Sala de chamada">
+  const stageLabel = focusedScreenShare ? `${displayName(focusedScreenShare.participant)} está compartilhando a tela` : "Palco da chamada";
+  const isReconnecting = connectionState === ConnectionState.Reconnecting;
+  return <section className={cn("call-room", screenShares.length > 0 && "has-screen-share", focusedScreenShare && "has-focused-share")} aria-label="Sala de chamada">
     <header className="call-topbar call-topbar-modern">
       <div className="call-room-identity"><span className="call-room-icon"><Radio className="size-4" /></span><div className="min-w-0"><span className="call-room-kicker">CANAL DE VOZ</span><strong>{kind === "video" ? "Chamada de vídeo" : "Chamada de voz"}</strong></div></div>
-      <div className="call-topbar-status"><span className="live-indicator" /><span>Conectado</span><span className="call-status-divider" /><Users className="size-3.5" /><span>{participants.length}</span><button type="button" className="call-leave-button" onClick={() => void onLeave()}><PhoneOff className="size-4" /><span>Sair</span></button></div>
+      <div className="call-topbar-status"><span className={cn("live-indicator", isReconnecting && "is-reconnecting")} /><span>{isReconnecting ? "Reconectando…" : "Conectado"}</span><span className="call-status-divider" /><Users className="size-3.5" /><span>{participants.length}</span><button type="button" className="call-leave-button" onClick={() => void onLeave()}><PhoneOff className="size-4" /><span>Sair</span></button></div>
     </header>
+    {isReconnecting && <div className="call-reconnect-banner" role="status"><Gauge className="size-4" /><span>A conexão oscilou. A transmissão está sendo retomada automaticamente.</span></div>}
     <div className="call-main call-main-modern">
       <section ref={stageRef} className="call-stage call-stage-modern" aria-label={stageLabel}>
-        {primaryScreenShare ? <><VideoTrack trackRef={primaryScreenShare} className="call-screen-video" /><div className="call-screen-caption"><MonitorUp className="size-4" /><span>{stageLabel}</span></div><button type="button" className="call-fullscreen-control" onClick={() => void toggleStageFullscreen()} aria-label={isStageFullscreen ? "Sair da tela cheia" : "Ver tela compartilhada em tela cheia"}>{isStageFullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}</button></> : <div className="call-stage-empty"><span className="call-stage-orb"><MonitorUp className="size-7" /></span><h2>Palco pronto para compartilhar</h2><p>Vídeo, tela e som de uma aba aparecem aqui sem esconder seus controles.</p><span className="call-stage-hint"><Gauge className="size-3.5" /> Adaptação de qualidade ativa</span></div>}
+        {focusedScreenShare ? <><VideoTrack trackRef={focusedScreenShare} className="call-screen-video" /><div className="call-screen-caption"><MonitorUp className="size-4" /><span>{stageLabel}</span></div><button type="button" className="call-fullscreen-control" onClick={() => void toggleStageFullscreen()} aria-label={isStageFullscreen ? "Sair da tela cheia" : "Ver tela compartilhada em tela cheia"}>{isStageFullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}</button></> : <div className="call-stage-empty"><span className="call-stage-orb"><MonitorUp className="size-7" /></span><h2>{screenShares.length ? "Escolha uma transmissão" : "Palco pronto para compartilhar"}</h2><p>{screenShares.length ? "As transmissões estão abaixo. Clique em uma miniatura para abrir no palco." : "Vídeo, tela e som de uma aba aparecem aqui sem esconder seus controles."}</p><span className="call-stage-hint"><Gauge className="size-3.5" /> Adaptação de qualidade ativa</span></div>}
       </section>
       <aside className="call-participant-area call-participant-area-modern" aria-label="Participantes na chamada">
         <div className="call-section-heading"><span>NA CHAMADA</span><span>{participants.length}</span></div>
         <div className={cn("call-participant-grid", participants.length === 1 && "is-solo")}>{participants.map(participant => { const voiceTrack = voiceTracks.get(participant.identity); return <ParticipantCard key={participant.identity} participant={participant} cameraTrack={cameraTracks.get(participant.identity)} voiceTrack={voiceTrack} mix={mixFor(voiceTrack)} onMixChange={update => voiceTrack && updateMix(voiceTrack, update)} />; })}</div>
       </aside>
     </div>
+    {screenShares.length > 0 && <section className="call-share-strip" aria-label="Transmissões ativas"><div className="call-share-strip-heading"><span><MonitorUp className="size-4" /> TRANSMISSÕES</span><small>{screenShares.length} ao vivo</small></div><div className="call-share-grid">{screenShares.map(track => { const audioTrack = screenShareAudioTracks.find(audio => audio.participant.identity === track.participant.identity); return <ScreenShareCard key={trackKey(track)} track={track} audioTrack={audioTrack} mix={mixFor(audioTrack)} selected={trackKey(track) === focusedScreenShareKey} onSelect={() => openScreenShare(track)} onStopWatching={() => setFocusedScreenShareKey(null)} onFullscreen={() => openScreenShareFullscreen(track)} onMixChange={update => audioTrack && updateMix(audioTrack, update)} onSourceSwitchHelp={showSourceSwitchHelp} isLocal={track.participant.identity === localParticipant.identity} />; })}</div></section>}
     <section className="call-dock" aria-label="Controles rápidos da chamada">
       <button type="button" className={cn("call-dock-control", !isMicrophoneEnabled && "is-off", pushToTalkEnabled && "is-active")} onClick={() => void toggleMicrophone()} disabled={pushToTalkEnabled} aria-label={pushToTalkEnabled ? `Aperte ${pushToTalkKeyLabel(pushToTalkKey)} para falar` : isMicrophoneEnabled ? "Desativar microfone" : "Ativar microfone"}>{pushToTalkEnabled || isMicrophoneEnabled ? <Mic className="size-5" /> : <MicOff className="size-5" />}<span>{pushToTalkEnabled ? (isPushToTalkPressed ? "Falando" : "Aperte para falar") : "Microfone"}</span></button>
       <button type="button" className={cn("call-dock-control", !isCameraEnabled && "is-off")} onClick={() => void toggleCamera()} aria-label={isCameraEnabled ? "Desativar câmera" : "Ativar câmera"}>{isCameraEnabled ? <Video className="size-5" /> : <VideoOff className="size-5" />}<span>Câmera</span></button>
@@ -203,14 +240,14 @@ export function CallRoom({ kind, onLeave, voiceVideoSettings, onVoiceVideoSettin
       <summary><span><Settings2 className="size-4" /> Configurações da chamada</span><ChevronDown className="size-4" /></summary>
       <div className="call-settings-content">
         <div className="call-settings-grid">
-          <div className="call-settings-card"><div className="call-setting-title"><Gauge className="size-4" /><div><strong>Qualidade da transmissão</strong><p>{activeQuality ? `Meta ativa: ${screenShareProfiles[activeQuality].label}` : "Defina antes de compartilhar"}</p></div></div><div className="call-setting-actions"><label className="sr-only" htmlFor="screen-share-quality">Qualidade da tela compartilhada</label><select id="screen-share-quality" value={quality} onChange={event => setQuality(event.target.value as ScreenShareQuality)} disabled={isUpdatingShare} className="call-quality-select"><option value="720p60">720p · 60 fps</option><option value="1080p60">1080p · 60 fps</option></select>{isScreenShareEnabled && activeQuality !== quality && <button type="button" className="call-secondary-button" onClick={() => void applyQuality()} disabled={isUpdatingShare}>Aplicar</button>}</div></div>
+          <div className="call-settings-card"><div className="call-setting-title"><Gauge className="size-4" /><div><strong>Qualidade da transmissão</strong><p>{activeQuality ? `Meta ativa: ${screenShareProfiles[activeQuality].label}` : "540p estável é recomendado para evitar travamentos."}</p></div></div><div className="call-setting-actions"><label className="sr-only" htmlFor="screen-share-quality">Qualidade da tela compartilhada</label><select id="screen-share-quality" value={quality} onChange={event => setQuality(event.target.value as ScreenShareQuality)} disabled={isUpdatingShare} className="call-quality-select"><option value="540p30">540p · estável</option><option value="720p30">720p · equilibrado</option><option value="1080p30">1080p · equilibrado</option><option value="720p60">720p · 60 fps</option><option value="1080p60">1080p · 60 fps</option></select>{isScreenShareEnabled && activeQuality !== quality && <button type="button" className="call-secondary-button" onClick={() => void applyQuality()} disabled={isUpdatingShare}>Aplicar</button>}</div></div>
           <div className="call-settings-card"><div className="call-setting-title"><AudioLines className="size-4" /><div><strong>Áudio na transmissão</strong><p>O navegador só captura quando oferece uma trilha de áudio.</p></div></div><label className="call-share-audio-toggle"><input type="checkbox" checked={includeScreenShareAudio} onChange={event => setIncludeScreenShareAudio(event.target.checked)} disabled={isScreenShareEnabled || isUpdatingShare} /><span>Incluir áudio</span></label></div>
           <div className="call-settings-card"><div className="call-setting-title"><Keyboard className="size-4" /><div><strong>Microfone</strong><p>{pushToTalkEnabled ? `Aperte ${pushToTalkKeyLabel(pushToTalkKey)} para falar.` : "Redução de ruído e eco ativada quando o navegador oferece suporte."}</p></div></div><div className="call-setting-actions"><button type="button" className={cn("call-secondary-button", pushToTalkEnabled && "is-active")} onClick={() => void togglePushToTalk()}>{pushToTalkEnabled ? "Aperte para falar" : "Ativar aperte para falar"}</button>{pushToTalkEnabled && <button type="button" className={cn("call-secondary-button", isChoosingPushToTalkKey && "is-active")} onClick={() => setIsChoosingPushToTalkKey(true)}>{isChoosingPushToTalkKey ? "Pressione uma tecla…" : `Tecla: ${pushToTalkKeyLabel(pushToTalkKey)}`}</button>}</div></div>
         </div>
-        <div className="call-stream-mixer"><div className="call-stream-mixer-heading"><SlidersHorizontal className="size-4" /><div><strong>Mixer de transmissão</strong><p>O volume abaixo afeta apenas este dispositivo.</p></div></div>{screenShareAudioTracks.length ? screenShareAudioTracks.map(track => <StreamAudioMixer key={trackKey(track)} track={track} mix={mixFor(track)} onMixChange={update => updateMix(track, update)} />) : <p className="call-empty-mixer">Quando alguém compartilhar uma aba com áudio, o volume individual aparecerá aqui.</p>}</div>
+        <div className="call-stream-mixer"><div className="call-stream-mixer-heading"><SlidersHorizontal className="size-4" /><div><strong>Mixer de transmissão</strong><p>O volume abaixo afeta apenas este dispositivo. Também está disponível ao clicar com o botão direito em uma transmissão.</p></div></div>{screenShareAudioTracks.length ? screenShareAudioTracks.map(track => <div key={trackKey(track)} className="call-stream-audio-row"><div className="call-stream-audio-title"><AudioLines className="size-4" /><span><strong>{displayName(track.participant)}</strong><small>Áudio da transmissão</small></span></div><button type="button" className={cn("call-mini-mute", mixFor(track).muted && "is-muted")} onClick={() => updateMix(track, { muted: !mixFor(track).muted })} aria-label="Alternar áudio da transmissão">{mixFor(track).muted ? <VolumeX className="size-3.5" /> : <Volume2 className="size-3.5" />}</button><input type="range" min="0" max="100" step="1" value={Math.round(mixFor(track).volume * 100)} onChange={event => updateMix(track, { volume: Number(event.target.value) / 100 })} aria-label={`Volume da transmissão de ${displayName(track.participant)}`} /><output>{Math.round(mixFor(track).volume * 100)}%</output></div>) : <p className="call-empty-mixer">Quando alguém compartilhar uma aba com áudio, o volume individual aparecerá aqui.</p>}</div>
       </div>
     </details>
-    <p className="call-quality-note">O Círculo prioriza áudio e adapta vídeo à sua tela e rede. A fluidez e os 60 fps dependem de navegador, dispositivo e conexão de cada pessoa.</p>
+    <p className="call-quality-note">Para reduzir travamentos, comece em 540p estável. Use 60 fps apenas quando a conexão, o navegador e o dispositivo sustentarem a taxa de quadros.</p>
     {shareError && <div role="alert" className="call-share-error"><p>{shareError}</p>{displayCaptureBlocked && isEmbeddedPreview && <a className="call-preview-help" href={window.location.href} target="_blank" rel="noreferrer">Abrir o Círculo em nova guia para compartilhar a tela</a>}</div>}
     <div className="call-audio-renderer" aria-hidden="true">{remoteAudioTracks.map(track => { const mix = mixFor(track); return <AudioTrack key={trackKey(track)} trackRef={track} volume={mix.volume} muted={mix.muted} autoPlay />; })}</div>
   </section>;

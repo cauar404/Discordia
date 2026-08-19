@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { livekitRoomOptions } from "../client/src/lib/livekitOptions";
+import { DefaultReconnectPolicy } from "livekit-client";
+import { livekitReconnectDelaysMs, livekitRoomOptions } from "../client/src/lib/livekitOptions";
 
 describe("opções de mídia da sala LiveKit", () => {
   it("ativa adaptação para reduzir trabalho de vídeo desnecessário", () => {
@@ -21,5 +22,10 @@ describe("opções de mídia da sala LiveKit", () => {
       voiceIsolation: true,
       channelCount: 1,
     });
+  });
+
+  it("retoma a chamada rapidamente após uma oscilação temporária de rede", () => {
+    expect(livekitReconnectDelaysMs).toEqual([0, 300, 1200, 2700, 4800, 7000, 7000]);
+    expect(livekitRoomOptions.reconnectPolicy).toBeInstanceOf(DefaultReconnectPolicy);
   });
 });

@@ -1,4 +1,22 @@
 export const screenShareProfiles = {
+  "540p30": {
+    label: "540p · estável",
+    shortLabel: "540p/30",
+    resolution: { width: 960, height: 540, frameRate: 30 },
+    encoding: { maxBitrate: 1_200_000, maxFramerate: 30 },
+  },
+  "720p30": {
+    label: "720p · equilibrado",
+    shortLabel: "720p/30",
+    resolution: { width: 1280, height: 720, frameRate: 30 },
+    encoding: { maxBitrate: 2_000_000, maxFramerate: 30 },
+  },
+  "1080p30": {
+    label: "1080p · equilibrado",
+    shortLabel: "1080p/30",
+    resolution: { width: 1920, height: 1080, frameRate: 30 },
+    encoding: { maxBitrate: 4_000_000, maxFramerate: 30 },
+  },
   "720p60": {
     label: "720p · 60 fps",
     shortLabel: "720p/60",

@@ -9,3 +9,9 @@ A página inicial publicada em `https://discordia-1-8oe2.onrender.com` carregou 
 A tela inicial foi verificada depois da separação sob demanda do módulo de chamadas. Em 1280×720, o cartão de autenticação permaneceu centralizado, legível e sem estouro horizontal. Em 375×812, os campos, as abas de entrada/criação de conta e a ação principal permaneceram acessíveis, com o texto complementar dentro do cartão.
 
 Esta evidência cobre somente a tela inicial. A aparência da sala de chamada com mídia ativa continua dependente de validação real por participantes conectados.
+
+## Verificação visual após recuperação de conexão — 2026-08-19
+
+A tela inicial local permaneceu utilizável após a adição da política de reconexão LiveKit. Em 1280×720, o formulário de autenticação ficou centralizado e legível. Em 390×844, os campos, as abas e a ação principal permaneceram dentro do cartão, sem recorte ou rolagem horizontal.
+
+Esta verificação não simula uma chamada conectada nem uma transmissão ativa; a grade, o palco expansível, os menus contextuais e o aviso de reconexão exigem validação com participantes reais na versão publicada.

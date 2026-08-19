@@ -93,3 +93,14 @@
 - [x] Documentar e testar a conexão Socket.IO direta por WebSocket e a reconexão curta para mensagens, presença e atualizações de chamada.
 - [x] Separar o módulo LiveKit do carregamento inicial para reduzir o peso do bootstrap antes de entrar em uma chamada.
 - [ ] Revisar e documentar os fluxos de bootstrap autenticado, mensagens, presença e chamadas que ainda não receberam otimização específica de latência.
+- [ ] Diagnosticar os indicadores de qualidade da conexão LiveKit e identificar se os travamentos decorrem de rede, CPU, perda de pacotes ou perfil de mídia inadequado.
+- [ ] Exibir dentro da chamada indicadores e recomendações de qualidade para orientar troca de perfil, redução de resolução ou reconexão quando necessário.
+- [x] Ajustar os perfis adaptativos de transmissão para priorizar estabilidade em redes variáveis.
+- [ ] Implementar e testar recuperação específica de conexão LiveKit, com estado visível de reconexão e retomada segura após perda temporária de rede.
+- [ ] Validar no Render que o perfil 540p estável reduz travamentos e registrar o comportamento de reconexão da transmissão em rede variável.
+- [ ] Diagnosticar e reduzir travamentos e atrasos específicos da transmissão de vídeo e tela compartilhada, sem alterar o perfil de voz que está estável.
+- [ ] Reorganizar a entrada na chamada em uma grade responsiva de participantes, com cartões compactos e hierarquia visual inspirada em clientes de voz modernos.
+- [ ] Mostrar múltiplas transmissões como miniaturas e permitir expandir uma escolhida no palco, alternar a transmissão visualizada e abrir a transmissão em tela cheia.
+- [ ] Adicionar menus contextuais ao clicar com o botão direito em participante e transmissão para volume individual, silenciamento, parar de assistir e controles de transmissão aplicáveis.
+- [x] Preservar a opção nativa de troca de fonte de compartilhamento quando o navegador suportar surface switching e explicar o limite quando não houver suporte.
+- [ ] Ajustar a paleta e os espaçamentos da sala para uma linguagem de interface escura, clara e responsiva, sem reutilizar marcas ou ativos de terceiros.

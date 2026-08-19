@@ -1,0 +1,99 @@
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { trpc } from "@/lib/trpc";
+import { BookOpenCheck, Loader2, Plus, Shield, Ticket, UserRoundCog } from "lucide-react";
+import { FormEvent, useState } from "react";
+import { toast } from "sonner";
+
+const permissions = ["send_messages", "manage_messages", "manage_channels", "manage_members", "manage_roles", "kick_members", "ban_members", "timeout_members", "connect_voice", "share_screen"];
+
+function toBase64(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Não foi possível ler o arquivo."));
+    reader.onload = () => resolve(String(reader.result).split(",")[1] ?? "");
+    reader.readAsDataURL(file);
+  });
+}
+
+export function CommunityAdminDialog({ communityId, channelId, enabled }: { communityId: number; channelId?: number | null; enabled: boolean }) {
+  const [open, setOpen] = useState(false);
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [selectedRoleId, setSelectedRoleId] = useState("");
+  const [permissionValue, setPermissionValue] = useState("send_messages");
+  const utils = trpc.useUtils();
+  const queryOptions = { enabled: open && enabled };
+  const members = trpc.platform.communities.members.useQuery({ communityId }, queryOptions);
+  const communities = trpc.platform.communities.list.useQuery(undefined, queryOptions);
+  const roles = trpc.platform.communities.roles.useQuery({ communityId }, queryOptions);
+  const invites = trpc.platform.communities.listInvites.useQuery({ communityId }, queryOptions);
+  const audit = trpc.platform.communities.auditLogs.useQuery({ communityId }, queryOptions);
+  const moderationStates = trpc.social.moderation.states.useQuery({ communityId }, queryOptions);
+  const community = communities.data?.find(item => item.community.id === communityId)?.community;
+  const refreshAdmin = () => {
+    void utils.platform.communities.members.invalidate();
+    void utils.platform.communities.roles.invalidate();
+    void utils.platform.communities.auditLogs.invalidate();
+    void utils.social.moderation.states.invalidate();
+  };
+  const createInvite = trpc.platform.communities.createInvite.useMutation({ onSuccess: result => { setInviteCode(result.code); void utils.platform.communities.listInvites.invalidate(); toast.success("Convite criado."); }, onError: error => toast.error(error.message) });
+  const revokeInvite = trpc.platform.communities.revokeInvite.useMutation({ onSuccess: () => { void utils.platform.communities.listInvites.invalidate(); toast.success("Convite revogado."); }, onError: error => toast.error(error.message) });
+  const createCategory = trpc.platform.communities.createCategory.useMutation({ onSuccess: () => { void utils.platform.communities.channels.invalidate(); toast.success("Categoria criada."); }, onError: error => toast.error(error.message) });
+  const createRole = trpc.platform.communities.createRole.useMutation({ onSuccess: () => { refreshAdmin(); toast.success("Cargo criado."); }, onError: error => toast.error(error.message) });
+  const assignRole = trpc.platform.communities.assignRole.useMutation({ onSuccess: () => { refreshAdmin(); toast.success("Cargo atribuído."); }, onError: error => toast.error(error.message) });
+  const setPermission = trpc.platform.communities.setChannelPermission.useMutation({ onSuccess: () => toast.success("Permissão de canal atualizada."), onError: error => toast.error(error.message) });
+  const updateCommunity = trpc.platform.communities.update.useMutation({ onSuccess: () => { void utils.platform.communities.list.invalidate(); toast.success("Identidade da comunidade atualizada."); }, onError: error => toast.error(error.message) });
+  const moderate = trpc.social.moderation.act.useMutation({ onSuccess: () => { refreshAdmin(); toast.success("Ação de moderação registrada."); }, onError: error => toast.error(error.message) });
+
+  if (!enabled) return null;
+
+  const handleRole = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    createRole.mutate({
+      communityId,
+      name: String(form.get("role") || ""),
+      color: String(form.get("color") || "#C8A97E"),
+      position: Number(form.get("position") || 1),
+      permissions: permissions.filter(permission => form.get(permission) === "on"),
+    });
+    event.currentTarget.reset();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild><button title="Administrar comunidade" className="text-slate-500 hover:text-slate-200"><UserRoundCog className="size-4" /></button></DialogTrigger>
+      <DialogContent className="max-h-[90vh] overflow-y-auto border-white/10 bg-[#121722] p-0 text-white sm:max-w-4xl">
+        <DialogHeader className="sr-only"><DialogTitle>Administração da comunidade</DialogTitle><DialogDescription>Controles de cargos, convites, moderação e auditoria.</DialogDescription></DialogHeader>
+        <Tabs defaultValue="invites" className="p-5">
+          <TabsList className="mb-5 h-9 bg-white/5">
+            <TabsTrigger value="invites" className="text-xs data-[state=active]:bg-[#cbb38a] data-[state=active]:text-[#151923]"><Ticket className="mr-1 size-3.5" />Convites</TabsTrigger>
+            <TabsTrigger value="roles" className="text-xs data-[state=active]:bg-[#cbb38a] data-[state=active]:text-[#151923]"><Shield className="mr-1 size-3.5" />Cargos</TabsTrigger>
+            <TabsTrigger value="moderation" className="text-xs data-[state=active]:bg-[#cbb38a] data-[state=active]:text-[#151923]">Moderação</TabsTrigger>
+            <TabsTrigger value="audit" className="text-xs data-[state=active]:bg-[#cbb38a] data-[state=active]:text-[#151923]"><BookOpenCheck className="mr-1 size-3.5" />Auditoria</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="invites" className="m-0 space-y-5">
+            <section className="rounded-xl border border-white/10 bg-white/[0.03] p-4"><h3 className="text-sm font-semibold">Novo convite privado</h3><p className="mt-1 text-xs text-slate-500">Cada convite pode ter prazo e número máximo de usos.</p><form onSubmit={event => { event.preventDefault(); const form = new FormData(event.currentTarget); createInvite.mutate({ communityId, maxUses: Number(form.get("uses")) || null, expiresAt: form.get("expires") ? new Date(String(form.get("expires"))) : null }); }} className="mt-4 flex flex-wrap gap-2"><Input name="uses" type="number" min="1" max="15" defaultValue="1" className="h-9 max-w-28 border-white/10 bg-white/5 text-white" /><Input name="expires" type="datetime-local" className="h-9 max-w-56 border-white/10 bg-white/5 text-white" /><Button className="h-9 bg-[#cbb38a] text-[#151923] hover:bg-[#dec99d]" type="submit">Gerar</Button></form>{inviteCode && <code className="mt-4 block rounded-lg bg-[#cbb38a]/10 p-3 text-xs text-[#e9d8b7]">{inviteCode}</code>}</section>
+            <ScrollArea className="h-64"><div className="space-y-2">{invites.isLoading && <Loader2 className="mx-auto mt-8 size-5 animate-spin text-slate-500" />}{(invites.data ?? []).map(invite => <div key={invite.id} className="flex items-center gap-3 rounded-xl bg-white/[0.035] px-3 py-3"><div className="min-w-0 flex-1"><code className="block truncate text-xs text-slate-300">{invite.code}</code><small className="text-[11px] text-slate-500">{invite.uses}/{invite.maxUses ?? "∞"} usos · {invite.expiresAt ? `expira em ${new Date(invite.expiresAt).toLocaleString()}` : "sem expiração"}</small></div>{invite.revokedAt ? <span className="text-xs text-rose-300">Revogado</span> : <Button size="sm" variant="outline" className="h-7 border-white/10 text-xs text-slate-300" onClick={() => revokeInvite.mutate({ inviteId: invite.id })}>Revogar</Button>}</div>)}</div></ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="roles" className="m-0 grid gap-5 md:grid-cols-2">
+            <section><h3 className="text-sm font-semibold">Criar cargo</h3><form onSubmit={handleRole} className="mt-3 space-y-3 rounded-xl border border-white/10 bg-white/[0.03] p-4"><Input name="role" required placeholder="Nome do cargo" className="h-9 border-white/10 bg-white/5 text-white" /><div className="grid grid-cols-2 gap-2"><Input name="color" defaultValue="#C8A97E" className="h-9 border-white/10 bg-white/5 text-white" /><Input name="position" type="number" defaultValue="1" min="0" className="h-9 border-white/10 bg-white/5 text-white" /></div><div className="grid grid-cols-2 gap-2">{permissions.map(permission => <label key={permission} className="flex items-center gap-2 text-[11px] text-slate-400"><input name={permission} type="checkbox" className="accent-[#cbb38a]" />{permission.replaceAll("_", " ")}</label>)}</div><Button type="submit" className="h-9 w-full bg-[#cbb38a] text-[#151923] hover:bg-[#dec99d]"><Plus className="size-4" />Criar cargo</Button></form></section>
+            <section><h3 className="text-sm font-semibold">Hierarquia e permissões</h3><ScrollArea className="mt-3 h-48 rounded-xl border border-white/10 bg-white/[0.03] p-3"><div className="space-y-2">{(roles.data?.roles ?? []).map(role => <div key={role.id} className="rounded-lg bg-white/[0.04] p-3"><div className="flex items-center justify-between"><span className="text-sm"><i className="mr-2 inline-block size-2 rounded-full" style={{ backgroundColor: role.color ?? "#C8A97E" }} />{role.name}</span><small className="text-[10px] text-slate-500">posição {role.position}</small></div><p className="mt-2 text-[11px] text-slate-500">{role.permissions.join(" · ") || "Sem permissões"}</p></div>)}</div></ScrollArea><div className="mt-3 flex flex-wrap gap-2"><Select value={selectedRoleId} onValueChange={setSelectedRoleId}><SelectTrigger className="h-9 border-white/10 bg-white/5 text-xs"><SelectValue placeholder="Cargo do canal" /></SelectTrigger><SelectContent>{(roles.data?.roles ?? []).map(role => <SelectItem key={role.id} value={String(role.id)}>{role.name}</SelectItem>)}</SelectContent></Select><Select value={permissionValue} onValueChange={setPermissionValue}><SelectTrigger className="h-9 border-white/10 bg-white/5 text-xs"><SelectValue /></SelectTrigger><SelectContent>{permissions.map(permission => <SelectItem key={permission} value={permission}>{permission.replaceAll("_", " ")}</SelectItem>)}</SelectContent></Select>{channelId && <><Button size="sm" className="h-9 bg-[#cbb38a] text-[#151923] hover:bg-[#dec99d]" disabled={!selectedRoleId} onClick={() => setPermission.mutate({ channelId, roleId: Number(selectedRoleId), allow: [permissionValue], deny: [] })}>Permitir</Button><Button size="sm" variant="outline" className="h-9 border-rose-300/30 text-rose-200 hover:bg-rose-400/10" disabled={!selectedRoleId} onClick={() => setPermission.mutate({ channelId, roleId: Number(selectedRoleId), allow: [], deny: [permissionValue] })}>Negar</Button></>}</div></section>
+            <section className="md:col-span-2"><h3 className="mb-2 text-sm font-semibold">Membros e cargos</h3><ScrollArea className="h-36 rounded-xl border border-white/10 bg-white/[0.03] p-2"><div className="space-y-2">{(members.data ?? []).map(({ member, profile }) => <div key={member.id} className="flex items-center gap-3 rounded-lg px-2 py-1.5"><span className="grid size-7 place-items-center rounded-lg bg-[#cbb38a]/15 text-xs text-[#d8c094]">{profile.displayName.slice(0, 1).toUpperCase()}</span><span className="min-w-0 flex-1 truncate text-sm">{profile.displayName}</span><Select onValueChange={roleId => assignRole.mutate({ communityId, userId: member.userId, roleId: Number(roleId) })}><SelectTrigger className="h-8 w-36 border-white/10 bg-white/5 text-xs"><SelectValue placeholder="Atribuir cargo" /></SelectTrigger><SelectContent>{(roles.data?.roles ?? []).map(role => <SelectItem key={role.id} value={String(role.id)}>{role.name}</SelectItem>)}</SelectContent></Select></div>)}</div></ScrollArea></section>
+          </TabsContent>
+
+          <TabsContent value="moderation" className="m-0"><p className="mb-3 text-xs text-slate-500">As ações são persistidas no log de auditoria. Expulsar e banir removem o membro da comunidade.</p><ScrollArea className="h-80 rounded-xl border border-white/10 bg-white/[0.03] p-3"><div className="space-y-2">{(members.data ?? []).map(({ member, profile }) => <div key={member.id} className="flex flex-wrap items-center gap-2 rounded-lg bg-white/[0.04] p-3"><span className="min-w-0 flex-1 text-sm">{profile.displayName}</span><Button size="sm" variant="outline" className="h-7 border-white/10 text-xs text-slate-300" onClick={() => moderate.mutate({ communityId, targetUserId: member.userId, type: "timeout", reason: "Timeout administrativo", expiresAt: new Date(Date.now() + 15 * 60_000) })}>Timeout</Button><Button size="sm" variant="outline" className="h-7 border-amber-400/20 text-xs text-amber-200" onClick={() => moderate.mutate({ communityId, targetUserId: member.userId, type: "kick", reason: "Removido pela administração" })}>Expulsar</Button><Button size="sm" variant="outline" className="h-7 border-rose-400/20 text-xs text-rose-300" onClick={() => moderate.mutate({ communityId, targetUserId: member.userId, type: "ban", reason: "Banido pela administração" })}>Banir</Button></div>)}</div></ScrollArea></TabsContent>
+
+          <TabsContent value="audit" className="m-0 space-y-4"><section className="rounded-xl border border-white/10 bg-white/[0.03] p-3"><h3 className="text-sm font-semibold">Restrições atuais</h3><p className="mt-1 text-xs text-slate-500">Banimentos, remoções e timeouts recentes, com estado ativo calculado no servidor.</p><div className="mt-3 space-y-2">{moderationStates.isLoading && <Loader2 className="size-4 animate-spin text-slate-500" />}{(moderationStates.data ?? []).map(state => <div key={state.id} className="flex items-center justify-between gap-3 rounded-lg bg-white/[0.04] px-3 py-2"><div className="min-w-0"><strong className="block truncate text-xs text-slate-200">{state.targetName}</strong><p className="text-[11px] text-slate-500">{state.type === "kick" ? "Removido" : state.type === "ban" ? "Banimento" : "Timeout"}{state.expiresAt ? ` até ${new Date(state.expiresAt).toLocaleString()}` : ""}</p></div><span className={state.active ? "text-xs text-rose-300" : "text-xs text-slate-500"}>{state.active ? "Ativo" : "Encerrado"}</span></div>)}{!(moderationStates.data?.length) && <p className="text-xs text-slate-500">Nenhuma restrição registrada.</p>}</div></section><ScrollArea className="h-56 rounded-xl border border-white/10 bg-white/[0.03] p-3"><div className="space-y-2">{audit.isLoading && <Loader2 className="mx-auto mt-10 size-5 animate-spin text-slate-500" />}{(audit.data ?? []).map(log => <div key={log.id} className="rounded-lg border border-white/5 p-3"><strong className="text-xs text-slate-200">{log.action}</strong><p className="mt-1 text-[11px] text-slate-500">{log.targetType} #{log.targetId ?? "—"} · {new Date(log.createdAt).toLocaleString()}</p></div>)}{!(audit.data?.length) && <p className="p-8 text-center text-sm text-slate-500">Nenhuma ação registrada.</p>}</div></ScrollArea></TabsContent>
+        </Tabs>
+        <div className="grid gap-4 border-t border-white/10 p-5 pt-5 md:grid-cols-2"><section className="rounded-xl border border-white/10 bg-white/[0.03] p-4"><h3 className="text-sm font-semibold">Identidade da comunidade</h3><div className="mt-3 overflow-hidden rounded-lg border border-white/10 bg-[#0e121a]"><div className="h-16 bg-gradient-to-r from-[#756040] to-[#1e2635]">{community?.bannerKey && <img src={`/manus-storage/${community.bannerKey}`} alt="Banner atual" className="size-full object-cover" />}</div><div className="flex items-center gap-3 p-3"><span className="grid size-9 place-items-center overflow-hidden rounded-lg bg-[#cbb38a] text-sm font-semibold text-[#151923]">{community?.iconKey ? <img src={`/manus-storage/${community.iconKey}`} alt="Ícone atual" className="size-full object-cover" /> : (community?.name?.slice(0, 1).toUpperCase() || "C")}</span><div><strong className="text-sm">{community?.name ?? "Comunidade"}</strong><p className="text-[11px] text-slate-500">Pré-visualização privada</p></div></div></div><form className="mt-3 space-y-2" onSubmit={async event => { event.preventDefault(); const form = new FormData(event.currentTarget); const iconFile = form.get("icon"); const bannerFile = form.get("banner"); if (iconFile instanceof File && iconFile.size > 2 * 1024 * 1024) { toast.error("O ícone pode ter no máximo 2 MB."); return; } if (bannerFile instanceof File && bannerFile.size > 5 * 1024 * 1024) { toast.error("O banner pode ter no máximo 5 MB."); return; } const icon = iconFile instanceof File && iconFile.size ? { fileName: iconFile.name, mimeType: iconFile.type, base64: await toBase64(iconFile) } : undefined; const banner = bannerFile instanceof File && bannerFile.size ? { fileName: bannerFile.name, mimeType: bannerFile.type, base64: await toBase64(bannerFile) } : undefined; updateCommunity.mutate({ communityId, name: String(form.get("name") || ""), description: String(form.get("description") || "") || null, icon, banner }); }}><Input name="name" defaultValue={community?.name ?? ""} required className="h-9 border-white/10 bg-white/5 text-white" placeholder="Nome" /><Input name="description" defaultValue={community?.description ?? ""} className="h-9 border-white/10 bg-white/5 text-white" placeholder="Descrição" /><label className="block text-[11px] text-slate-400">Ícone <Input name="icon" type="file" accept="image/png,image/jpeg,image/webp" className="mt-1 h-8 border-white/10 bg-white/5 text-xs text-slate-300" /></label><label className="block text-[11px] text-slate-400">Banner <Input name="banner" type="file" accept="image/png,image/jpeg,image/webp" className="mt-1 h-8 border-white/10 bg-white/5 text-xs text-slate-300" /></label><Button type="submit" disabled={updateCommunity.isPending} className="h-8 w-full bg-[#cbb38a] text-xs text-[#151923] hover:bg-[#dec99d]">Salvar identidade</Button></form></section><section className="rounded-xl border border-white/10 bg-white/[0.03] p-4"><h3 className="text-sm font-semibold">Categorias</h3><p className="mt-1 text-xs text-slate-500">Agrupe os canais de texto, voz e anúncios.</p><form onSubmit={event => { event.preventDefault(); const form = new FormData(event.currentTarget); createCategory.mutate({ communityId, name: String(form.get("category") || "") }); event.currentTarget.reset(); }} className="mt-4 flex gap-2"><Input name="category" required placeholder="Nova categoria" className="h-9 border-white/10 bg-white/5 text-white" /><Button type="submit" className="h-9 bg-[#cbb38a] text-[#151923] hover:bg-[#dec99d]">Criar</Button></form></section></div>
+      </DialogContent>
+    </Dialog>
+  );
+}

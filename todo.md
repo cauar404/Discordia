@@ -1,0 +1,56 @@
+# Project TODO
+
+- [x] Definir a arquitetura de hospedagem e comunicação em tempo real compatível com mensagens WebSocket e chamadas WebRTC.
+- [x] Criar o esquema relacional para perfis, comunidades, membros, cargos, permissões, canais, mensagens, anexos, reações, convites, amizades, bloqueios, notificações, leituras, auditoria e configurações.
+- [x] Aplicar as migrações do banco de dados e validar as relações, índices e regras de acesso.
+- [x] Implementar acesso fechado por convite ou aprovação, sessões persistentes, login, logout e recuperação de conta quando suportada pela autenticação disponível.
+- [x] Implementar perfis com avatar, nome de usuário, biografia, status de presença e status personalizado.
+- [x] Implementar cartões de perfil com ações de mensagem, amizade, bloqueio e silenciamento.
+- [x] Implementar comunidades privadas com nome, ícone, banner, descrição, categorias e canais.
+- [x] Implementar convites com expiração, limite de uso, revogação e controle de membros.
+- [x] Implementar cargos hierárquicos de administrador, moderador e membro com permissões por comunidade e canal.
+- [x] Implementar logs de auditoria e ações de moderação: exclusão de mensagens, expulsão, banimento e timeout.
+- [x] Implementar canais de texto com mensagens persistentes, respostas, edição, exclusão, reações, menções, fixação e estado de leitura.
+- [x] Implementar entrega de mensagens, presença, digitação e atualizações de canais em tempo real.
+- [x] Implementar anexos privados de imagens, vídeos e arquivos com validação de acesso e pré-visualização quando aplicável.
+- [x] Implementar pré-visualização de links sem expor conteúdo privado ou dados sensíveis.
+- [x] Implementar mensagens diretas individuais e em grupo, histórico, não lidas, reações, respostas, edição, exclusão, anexos e digitação.
+- [x] Implementar solicitações de amizade, aceitação, recusa, cancelamento, lista de amigos, presença e bloqueio.
+- [x] Implementar notificações de mensagens, menções, amizades, chamadas recebidas e perdidas e anúncios.
+- [x] Implementar configurações de conta, perfil, privacidade, aparência, voz e vídeo e acessibilidade.
+- [x] Integrar chamadas de voz e vídeo reais individuais e em grupo com controles de microfone, câmera, participantes, reconexão e detecção de orador quando disponibilizada pela integração escolhida.
+- [x] Integrar compartilhamento de tela real por APIs do navegador, com alternância entre câmera e tela e visualização em tela cheia.
+- [x] Criar a interface responsiva para desktop, tablet e dispositivos móveis.
+- [x] Cobrir estados de carregamento, vazio, erro, offline e sem permissão em todos os fluxos relevantes.
+- [x] Implementar validação de entrada, autorização no servidor, controle de acesso a comunidades, mensagens e arquivos e limitação de requisições onde aplicável.
+- [x] Criar testes unitários para regras de domínio, autorização, fluxos de comunidades, mensagens e relações sociais.
+- [x] Verificar os fluxos de interface em desktop e mobile, corrigir erros de execução e validar os caminhos principais de uso.
+- [x] Diagnosticar e corrigir a indisponibilidade da pré-visualização do projeto.
+- [x] Reproduzir o problema no acesso do usuário, identificar a causa raiz e aplicar a correção necessária.
+- [ ] Confirmar explicitamente com o usuário se a pré-visualização voltou a abrir normalmente no ambiente dele.
+- [ ] Documentar no todo.md ou nas notas de validação a confirmação do usuário e a resolução aplicada para o problema de pré-visualização.
+- [x] Auditar e corrigir os fluxos incompletos de ingresso e encerramento de chamadas em tempo real.
+- [x] Exibir uma grade de participantes atualizada em tempo real durante chamadas de voz e vídeo.
+- [x] Exibir o compartilhamento de tela recebido dentro da interface de chamada, com opção de tela cheia.
+- [x] Oferecer seleção funcional de 720p/60 fps e 1080p/60 fps antes de iniciar o compartilhamento de tela.
+- [x] Aplicar a qualidade escolhida ao compartilhamento de tela e apresentar limitações quando navegador, dispositivo ou rede não a suportarem.
+- [ ] Testar a atualização de chamadas, participantes e compartilhamento de tela em diferentes tamanhos de viewport.
+- [x] Consolidar os recursos obrigatórios em uma versão inicial funcional e pronta para validação do grupo privado.
+- [x] Validar por testes as regras de acesso de membros, cargos, permissões de canal e convites antes da entrega.
+- [x] Implementar upload e persistência de ícone e banner de comunidade, com exibição real na UI e validação de arquivo.
+- [x] Comprovar e concluir o enforcement de permissões hierárquicas por comunidade e canal, incluindo regras de permitir e negar nos fluxos protegidos.
+- [x] Registrar exclusão de mensagens, expulsão, banimento e timeout no log de auditoria e expor seus estados na interface administrativa.
+- [x] Adicionar e exibir evidências verificáveis dos papéis administrador, moderador e membro em todos os fluxos protegidos relevantes.
+- [x] Cobrir com testes as regras de membros, cargos, permissões allow/deny por canal, convites e moderação.
+- [x] Exibir no painel administrativo os estados atuais de banimento, remoção e timeout, com duração quando aplicável.
+- [x] Corrigir a falha de carregamento do perfil autenticado causada pela inicialização de preferências sem campos de atualização.
+- [x] Confirmar na pré-visualização que uma conta administradora aprovada entra na plataforma sem ser redirecionada para aprovação.
+- [x] Detectar o bloqueio de display-capture na pré-visualização incorporada e orientar o uso de um contexto compatível para compartilhar a tela.
+- [ ] Diagnosticar e corrigir a falha de publicação do projeto com base nos registros de build e implantação.
+- [x] Permitir acesso privado por convite sem exigir criação manual de conta, preservando controle de membros e permissões.
+- [ ] Reorganizar a área de tela compartilhada para manter os controles de chamada sempre acessíveis em todos os viewports.
+- [x] Adicionar opção configurável de aperte-para-falar, incluindo seleção da tecla de ativação e comportamento de pressionar/soltar.
+- [ ] Investigar a falha de implantação com logs vazios, reproduzir a preparação de produção e confirmar a publicação após a correção ou diagnóstico.
+- [ ] Orientar a configuração do Círculo como Web Service no Render, incluindo build, variáveis de ambiente e URLs públicas.
+- [ ] Corrigir a configuração de Root Directory do Render para o diretório que contém o package.json do Círculo.
+- [ ] Substituir o ZIP no repositório GitHub pelos arquivos fonte versionados do Círculo para permitir o build no Render.

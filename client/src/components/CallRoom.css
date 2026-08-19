@@ -1,0 +1,8 @@
+.call-preview-help {
+  display: inline-flex;
+  margin-top: 0.3rem;
+  color: #e8d9b9;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

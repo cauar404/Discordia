@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1787083345189,
+      "tag": "0000_sticky_zemo",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1787084471798,
+      "tag": "0001_productive_microbe",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1787084571820,
+      "tag": "0002_outgoing_cardiac",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1787087679642,
+      "tag": "0003_sloppy_psylocke",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1787088084845,
+      "tag": "0004_abnormal_bromley",
+      "breakpoints": true
+    }
+  ]
+}

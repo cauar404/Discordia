@@ -38,4 +38,14 @@ describe("diagnóstico de transmissão", () => {
 
     expect(collectCallMediaMetrics(report, 2_500, 1_200).bitrateKbps).toBeUndefined();
   });
+
+  it("não mistura o contador da transmissão recebida com o da transmissão enviada", () => {
+    const report = new Map([
+      ["outbound-video", { id: "outbound-video", type: "outbound-rtp", kind: "video", bytesSent: 5_000 }],
+      ["inbound-video", { id: "inbound-video", type: "inbound-rtp", kind: "video", bytesReceived: 2_000 }],
+    ]) as unknown as RTCStatsReport;
+
+    expect(collectCallMediaMetrics(report, 2_500, 1_000, "inbound").bitrateKbps).toBe(3);
+    expect(collectCallMediaMetrics(report, 2_500, 1_000, "outbound").bitrateKbps).toBe(13);
+  });
 });

@@ -104,7 +104,9 @@ describe("apresentação da transmissão na sala de chamadas", () => {
 
   it("mantém o último diagnóstico real entre amostras e separa fechar de tela cheia no palco", () => {
     expect(callRoomSource).toContain("const diagnosticSampleRef = useRef");
-    expect(callRoomSource).toContain("Mantém a última amostra confirmada; uma falha temporária não vira bitrate zero.");
+    expect(callRoomSource).toContain("Amostra interrompida");
+    expect(callRoomSource).toContain("const diagnosticDirection = diagnosticScreenShare?.participant.identity === localParticipant.identity ? \"outbound\" : \"inbound\"");
+    expect(callRoomSource).toContain("stat.type === `${diagnosticDirection}-rtp`");
     expect(callRoomStyles).toContain(".call-stage-actions { position:absolute; top:.6rem; right:.6rem; z-index:2");
     expect(callRoomStyles).toContain(".call-stage-close { position:absolute; z-index:2; top:.6rem; left:.6rem; }");
   });

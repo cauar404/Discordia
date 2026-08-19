@@ -131,6 +131,7 @@ export function CallRoom({ kind, onLeave, isMinimized = false, onMinimize, onRes
   const diagnosticScreenShare = useMemo(() => focusedScreenShare ?? screenShares.find(track => track.participant.identity === localParticipant.identity), [focusedScreenShare, localParticipant.identity, screenShares]);
   const diagnosticScreenShareKey = diagnosticScreenShare ? trackKey(diagnosticScreenShare) : null;
   const diagnosticRtcTrack = diagnosticScreenShare?.publication?.track;
+  const diagnosticDirection = diagnosticScreenShare?.participant.identity === localParticipant.identity ? "outbound" : "inbound";
 
   useEffect(() => {
     if (focusedScreenShareKey && !screenShares.some(track => trackKey(track) === focusedScreenShareKey)) setFocusedScreenShareKey(null);
@@ -156,11 +157,15 @@ export function CallRoom({ kind, onLeave, isMinimized = false, onMinimize, onRes
     const sample = async () => {
       try {
         const report = await diagnosticRtcTrack.getRTCStatsReport();
-        if (!report || cancelled) return;
+        if (cancelled) return;
+        if (!report) {
+          setMediaDiagnostic(previous => previous ? { ...previous, status: "unavailable", label: "Amostra indisponível", recommendation: "A transmissão continua, mas o navegador não entregou uma nova amostra WebRTC. O último bitrate confirmado permanece exibido." } : null);
+          return;
+        }
         const now = Date.now();
         const previousSample = diagnosticSampleRef.current;
-        const metrics = collectCallMediaMetrics(report, previousSample.sampledAt ? now - previousSample.sampledAt : 0, previousSample.bytes);
-        const rtp = Array.from(report.values()).find(stat => (stat.type === "outbound-rtp" || stat.type === "inbound-rtp") && stat.kind === "video");
+        const metrics = collectCallMediaMetrics(report, previousSample.sampledAt ? now - previousSample.sampledAt : 0, previousSample.bytes, diagnosticDirection);
+        const rtp = Array.from(report.values()).find(stat => stat.type === `${diagnosticDirection}-rtp` && stat.kind === "video");
         diagnosticSampleRef.current = {
           trackKey: diagnosticScreenShareKey,
           bytes: typeof rtp?.bytesSent === "number" ? rtp.bytesSent : typeof rtp?.bytesReceived === "number" ? rtp.bytesReceived : previousSample.bytes,
@@ -173,12 +178,14 @@ export function CallRoom({ kind, onLeave, isMinimized = false, onMinimize, onRes
           console.info("[Círculo LiveKit] Rota WebRTC da transmissão", route);
         }
         setMediaDiagnostic(diagnoseCallMedia(metrics));
-      } catch { /* Mantém a última amostra confirmada; uma falha temporária não vira bitrate zero. */ }
+      } catch {
+        if (!cancelled) setMediaDiagnostic(previous => previous ? { ...previous, status: "unavailable", label: "Amostra interrompida", recommendation: "A leitura WebRTC falhou temporariamente. O último bitrate confirmado permanece exibido e será atualizado assim que uma nova amostra chegar." } : null);
+      }
     };
     void sample();
     const interval = window.setInterval(() => { void sample(); }, 2_500);
     return () => { cancelled = true; window.clearInterval(interval); };
-  }, [diagnosticRtcTrack, diagnosticScreenShareKey]);
+  }, [diagnosticDirection, diagnosticRtcTrack, diagnosticScreenShareKey]);
   useEffect(() => {
     setPushToTalkEnabled(voiceVideoSettings?.pushToTalk === true);
     if (typeof voiceVideoSettings?.pushToTalkKey === "string") setPushToTalkKey(voiceVideoSettings.pushToTalkKey);

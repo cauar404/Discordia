@@ -54,7 +54,7 @@ function asNumber(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
-export function collectCallMediaMetrics(report: RTCStatsReport, elapsedMs: number, previousBytes?: number): CallMediaMetrics {
+export function collectCallMediaMetrics(report: RTCStatsReport, elapsedMs: number, previousBytes?: number, direction?: "outbound" | "inbound"): CallMediaMetrics {
   let inbound: VideoStatsRecord | undefined;
   let outbound: VideoStatsRecord | undefined;
   let remoteInbound: VideoStatsRecord | undefined;
@@ -73,7 +73,7 @@ export function collectCallMediaMetrics(report: RTCStatsReport, elapsedMs: numbe
   const packetsLost = asNumber(inbound?.packetsLost) ?? asNumber(remoteInbound?.packetsLost);
   const packetsReceived = asNumber(inbound?.packetsReceived) ?? asNumber(remoteInbound?.packetsReceived);
   const totalPackets = packetsLost !== undefined && packetsReceived !== undefined ? packetsLost + packetsReceived : undefined;
-  const bytes = asNumber(outbound?.bytesSent) ?? asNumber(inbound?.bytesReceived);
+  const bytes = direction === "outbound" ? asNumber(outbound?.bytesSent) : direction === "inbound" ? asNumber(inbound?.bytesReceived) : asNumber(outbound?.bytesSent) ?? asNumber(inbound?.bytesReceived);
   const localCandidate = candidatePair?.localCandidateId ? candidates.get(candidatePair.localCandidateId) : undefined;
   const remoteCandidate = candidatePair?.remoteCandidateId ? candidates.get(candidatePair.remoteCandidateId) : undefined;
   const candidateRoute = candidatePair ? {

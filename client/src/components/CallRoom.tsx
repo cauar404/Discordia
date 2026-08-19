@@ -117,6 +117,7 @@ export function CallRoom({ kind, onLeave, isMinimized = false, onMinimize, onRes
   const stageRef = useRef<HTMLElement | null>(null);
   const pushToTalkSequenceRef = useRef(0);
   const microphoneSignalRef = useRef<number | undefined>(microphoneToggleSignal);
+  const lastCandidatePairRef = useRef<string | null>(null);
   const isEmbeddedPreview = typeof window !== "undefined" && window.top !== window.self;
 
   const tracks = useMemo(() => mediaTracks.filter((track): track is TrackReference => track.publication !== undefined), [mediaTracks]);
@@ -150,6 +151,12 @@ export function CallRoom({ kind, onLeave, isMinimized = false, onMinimize, onRes
         const rtp = Array.from(report.values()).find(stat => (stat.type === "outbound-rtp" || stat.type === "inbound-rtp") && stat.kind === "video");
         previousBytes = typeof rtp?.bytesSent === "number" ? rtp.bytesSent : typeof rtp?.bytesReceived === "number" ? rtp.bytesReceived : previousBytes;
         previousSampleAt = now;
+        const route = metrics.candidatePair;
+        const routeSignature = route ? [route.protocol ?? "unknown", route.localCandidateType ?? "unknown", route.remoteCandidateType ?? "unknown", route.relayProtocol ?? "none", route.usesRelay ? "relay" : "direct"].join(":") : null;
+        if (routeSignature && routeSignature !== lastCandidatePairRef.current) {
+          lastCandidatePairRef.current = routeSignature;
+          console.info("[Círculo LiveKit] Rota WebRTC da transmissão", route);
+        }
         setMediaDiagnostic(diagnoseCallMedia(metrics));
       } catch { if (!cancelled) setMediaDiagnostic(null); }
     };

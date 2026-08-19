@@ -8,6 +8,13 @@ export type CallMediaMetrics = {
   framesDropped?: number;
   framesPerSecond?: number;
   qualityLimitationReason?: string;
+  candidatePair?: {
+    protocol?: string;
+    localCandidateType?: string;
+    remoteCandidateType?: string;
+    relayProtocol?: string;
+    usesRelay: boolean;
+  };
 };
 
 export type CallMediaDiagnostic = CallMediaMetrics & {
@@ -17,10 +24,16 @@ export type CallMediaDiagnostic = CallMediaMetrics & {
 };
 
 type VideoStatsRecord = {
+  id?: string;
   type: string;
   kind?: string;
   state?: string;
   nominated?: boolean;
+  localCandidateId?: string;
+  remoteCandidateId?: string;
+  candidateType?: string;
+  protocol?: string;
+  relayProtocol?: string;
   bytesSent?: number;
   bytesReceived?: number;
   packetsLost?: number;
@@ -46,6 +59,7 @@ export function collectCallMediaMetrics(report: RTCStatsReport, elapsedMs: numbe
   let outbound: VideoStatsRecord | undefined;
   let remoteInbound: VideoStatsRecord | undefined;
   let candidatePair: VideoStatsRecord | undefined;
+  const candidates = new Map<string, VideoStatsRecord>();
 
   report.forEach(stat => {
     const record = stat as unknown as VideoStatsRecord;
@@ -53,12 +67,22 @@ export function collectCallMediaMetrics(report: RTCStatsReport, elapsedMs: numbe
     if (record.type === "outbound-rtp" && record.kind === "video") outbound ??= record;
     if (record.type === "remote-inbound-rtp" && record.kind === "video") remoteInbound ??= record;
     if (record.type === "candidate-pair" && record.state === "succeeded" && record.nominated) candidatePair ??= record;
+    if ((record.type === "local-candidate" || record.type === "remote-candidate") && typeof record.id === "string") candidates.set(record.id, record);
   });
 
   const packetsLost = asNumber(inbound?.packetsLost) ?? asNumber(remoteInbound?.packetsLost);
   const packetsReceived = asNumber(inbound?.packetsReceived) ?? asNumber(remoteInbound?.packetsReceived);
   const totalPackets = packetsLost !== undefined && packetsReceived !== undefined ? packetsLost + packetsReceived : undefined;
   const bytes = asNumber(outbound?.bytesSent) ?? asNumber(inbound?.bytesReceived);
+  const localCandidate = candidatePair?.localCandidateId ? candidates.get(candidatePair.localCandidateId) : undefined;
+  const remoteCandidate = candidatePair?.remoteCandidateId ? candidates.get(candidatePair.remoteCandidateId) : undefined;
+  const candidateRoute = candidatePair ? {
+    protocol: localCandidate?.protocol ?? remoteCandidate?.protocol,
+    localCandidateType: localCandidate?.candidateType,
+    remoteCandidateType: remoteCandidate?.candidateType,
+    relayProtocol: localCandidate?.relayProtocol ?? remoteCandidate?.relayProtocol,
+    usesRelay: localCandidate?.candidateType === "relay" || remoteCandidate?.candidateType === "relay",
+  } : undefined;
   return {
     roundTripTimeMs: milliseconds(asNumber(remoteInbound?.roundTripTime) ?? asNumber(candidatePair?.currentRoundTripTime)),
     jitterMs: milliseconds(asNumber(inbound?.jitter) ?? asNumber(remoteInbound?.jitter)),
@@ -67,6 +91,7 @@ export function collectCallMediaMetrics(report: RTCStatsReport, elapsedMs: numbe
     framesDropped: asNumber(inbound?.framesDropped),
     framesPerSecond: asNumber(inbound?.framesPerSecond) ?? asNumber(outbound?.framesPerSecond),
     qualityLimitationReason: typeof outbound?.qualityLimitationReason === "string" && outbound.qualityLimitationReason !== "none" ? outbound.qualityLimitationReason : undefined,
+    candidatePair: candidateRoute,
   };
 }
 

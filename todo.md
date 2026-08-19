@@ -146,3 +146,4 @@
 - [x] Exibir somente avatares de participantes conectados sob cada canal de voz, mantendo os nomes apenas em tooltip acessível.
 - [x] Manter o identificador local do canal conectado para refletir “na chamada” imediatamente, antes da atualização assíncrona de presença retornar.
 - [x] Manter o identificador local do canal conectado para refletir “na chamada” imediatamente, antes da atualização assíncrona de presença retornar.
+- [x] Auditar e otimizar exclusivamente a rota LiveKit para usuários no Brasil, priorizando região próxima, UDP direto, fallback TURN adequado e métricas reais de RTT, jitter, perda e candidate pair, sem alterar a interface ou as funcionalidades.

@@ -1,7 +1,7 @@
 import { AudioTrack, VideoTrack, useConnectionState, useLocalParticipant, useParticipants, useTracks, type TrackReference } from "@livekit/components-react";
 import { Activity, AudioLines, ChevronDown, Gauge, Keyboard, Maximize2, Mic, MicOff, Minimize2, MonitorUp, PhoneOff, Radio, ScreenShare, Settings2, SlidersHorizontal, Users, Video, VideoOff, Volume2, VolumeX, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AudioPresets, ConnectionState, Track } from "livekit-client";
+import { AudioPresets, ConnectionState, Track, VideoQuality } from "livekit-client";
 import { cn } from "@/lib/utils";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuLabel, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { getScreenSharePublishOptions, screenShareProfiles, type ScreenShareQuality } from "@shared/callQuality";
@@ -100,7 +100,7 @@ export function CallRoom({ kind, onLeave, isMinimized = false, onMinimize, onRes
   const mediaTracks = useTracks([Track.Source.Camera, Track.Source.ScreenShare]);
   const audioTracks = useTracks([Track.Source.Microphone, Track.Source.ScreenShareAudio, Track.Source.Unknown]).filter((track): track is TrackReference => track.publication?.kind === Track.Kind.Audio);
   const { localParticipant, isCameraEnabled, isMicrophoneEnabled, isScreenShareEnabled } = useLocalParticipant();
-  const [quality, setQuality] = useState<ScreenShareQuality>("540p30");
+  const [quality, setQuality] = useState<ScreenShareQuality>("720p60");
   const [includeScreenShareAudio, setIncludeScreenShareAudio] = useState(true);
   const [activeQuality, setActiveQuality] = useState<ScreenShareQuality | null>(null);
   const [isUpdatingShare, setIsUpdatingShare] = useState(false);
@@ -131,6 +131,13 @@ export function CallRoom({ kind, onLeave, isMinimized = false, onMinimize, onRes
 
   useEffect(() => {
     if (focusedScreenShareKey && !screenShares.some(track => trackKey(track) === focusedScreenShareKey)) setFocusedScreenShareKey(null);
+  }, [focusedScreenShareKey, screenShares]);
+  useEffect(() => {
+    for (const screenShare of screenShares) {
+      const publication = screenShare.publication as { setVideoQuality?: (quality: VideoQuality) => void } | undefined;
+      if (!publication?.setVideoQuality) continue;
+      publication.setVideoQuality(trackKey(screenShare) === focusedScreenShareKey ? VideoQuality.HIGH : VideoQuality.MEDIUM);
+    }
   }, [focusedScreenShareKey, screenShares]);
   useEffect(() => {
     try { window.localStorage.setItem(INDIVIDUAL_AUDIO_MIX_STORAGE_KEY, serializeIndividualAudioMixes(audioMixes)); } catch { /* armazenamento local pode estar indisponível */ }
@@ -220,7 +227,7 @@ export function CallRoom({ kind, onLeave, isMinimized = false, onMinimize, onRes
     const profile = screenShareProfiles[nextQuality];
     setShareError(null); setDisplayCaptureBlocked(false); setIsUpdatingShare(true);
     try {
-      await localParticipant.setScreenShareEnabled(true, { video: true, ...getScreenShareAudioOptions(includeScreenShareAudio), resolution: profile.resolution, contentHint: "detail", selfBrowserSurface: "include", surfaceSwitching: "include" }, { ...getScreenSharePublishOptions(nextQuality), audioPreset: AudioPresets.musicHighQualityStereo, dtx: false, red: true, forceStereo: true });
+      await localParticipant.setScreenShareEnabled(true, { video: true, ...getScreenShareAudioOptions(includeScreenShareAudio), resolution: profile.resolution, contentHint: nextQuality.endsWith("60") ? "motion" : "detail", selfBrowserSurface: "include", surfaceSwitching: "include" }, { ...getScreenSharePublishOptions(nextQuality), audioPreset: AudioPresets.musicHighQualityStereo, dtx: false, red: true, forceStereo: true });
       setActiveQuality(nextQuality);
     } catch (error) {
       const blockedByPreviewPolicy = isDisplayCapturePolicyError(error);
@@ -291,7 +298,7 @@ export function CallRoom({ kind, onLeave, isMinimized = false, onMinimize, onRes
       <summary><span><Settings2 className="size-4" /> Configurações da chamada</span><ChevronDown className="size-4" /></summary>
       <div className="call-settings-content">
         <div className="call-settings-grid">
-          <div className="call-settings-card"><div className="call-setting-title"><Gauge className="size-4" /><div><strong>Qualidade da transmissão</strong><p>{activeQuality ? `Meta ativa: ${screenShareProfiles[activeQuality].label}` : "540p estável é recomendado para evitar travamentos."}</p></div></div><div className="call-setting-actions"><label className="sr-only" htmlFor="screen-share-quality">Qualidade da tela compartilhada</label><select id="screen-share-quality" value={quality} onChange={event => setQuality(event.target.value as ScreenShareQuality)} disabled={isUpdatingShare} className="call-quality-select"><option value="540p30">540p · estável</option><option value="720p30">720p · equilibrado</option><option value="1080p30">1080p · equilibrado</option><option value="720p60">720p · 60 fps</option><option value="1080p60">1080p · 60 fps</option></select>{isScreenShareEnabled && activeQuality !== quality && <button type="button" className="call-secondary-button" onClick={() => void applyQuality()} disabled={isUpdatingShare}>Aplicar</button>}</div></div>
+          <div className="call-settings-card"><div className="call-setting-title"><Gauge className="size-4" /><div><strong>Qualidade da transmissão</strong><p>{activeQuality ? `Meta ativa: ${screenShareProfiles[activeQuality].label}` : "720p a 60 fps é o padrão para vídeo e jogos; use 1080p a 60 fps em rede estável."}</p></div></div><div className="call-setting-actions"><label className="sr-only" htmlFor="screen-share-quality">Qualidade da tela compartilhada</label><select id="screen-share-quality" value={quality} onChange={event => setQuality(event.target.value as ScreenShareQuality)} disabled={isUpdatingShare} className="call-quality-select"><option value="540p30">540p · estável</option><option value="720p30">720p · equilibrado</option><option value="1080p30">1080p · equilibrado</option><option value="720p60">720p · 60 fps</option><option value="1080p60">1080p · 60 fps</option></select>{isScreenShareEnabled && activeQuality !== quality && <button type="button" className="call-secondary-button" onClick={() => void applyQuality()} disabled={isUpdatingShare}>Aplicar</button>}</div></div>
           <div className="call-settings-card"><div className="call-setting-title"><AudioLines className="size-4" /><div><strong>Áudio na transmissão</strong><p>O navegador só captura quando oferece uma trilha de áudio.</p></div></div><label className="call-share-audio-toggle"><input type="checkbox" checked={includeScreenShareAudio} onChange={event => setIncludeScreenShareAudio(event.target.checked)} disabled={isScreenShareEnabled || isUpdatingShare} /><span>Incluir áudio</span></label></div>
           <div className="call-settings-card"><div className="call-setting-title"><Keyboard className="size-4" /><div><strong>Microfone</strong><p>{pushToTalkEnabled ? `Aperte ${pushToTalkKeyLabel(pushToTalkKey)} para falar.` : "Redução de ruído e eco ativada quando o navegador oferece suporte."}</p></div></div><div className="call-setting-actions"><button type="button" className={cn("call-secondary-button", pushToTalkEnabled && "is-active")} onClick={() => void togglePushToTalk()}>{pushToTalkEnabled ? "Aperte para falar" : "Ativar aperte para falar"}</button>{pushToTalkEnabled && <button type="button" className={cn("call-secondary-button", isChoosingPushToTalkKey && "is-active")} onClick={() => setIsChoosingPushToTalkKey(true)}>{isChoosingPushToTalkKey ? "Pressione uma tecla…" : `Tecla: ${pushToTalkKeyLabel(pushToTalkKey)}`}</button>}</div></div>
           {diagnosticScreenShare && <div className="call-settings-card call-diagnostics-card"><div className="call-setting-title"><Activity className="size-4" /><div><strong>Diagnóstico da transmissão</strong><p>{mediaDiagnostic?.recommendation ?? "Aguardando métricas locais da transmissão…"}</p></div></div><div className="call-diagnostics-summary"><span className={cn("call-diagnostic-status", `is-${mediaDiagnostic?.status ?? "unavailable"}`)}>{mediaDiagnostic?.label ?? "Aguardando amostra"}</span><div className="call-diagnostic-metrics"><span>RTT <strong>{formatMediaMetric(mediaDiagnostic?.roundTripTimeMs, " ms")}</strong></span><span>Jitter <strong>{formatMediaMetric(mediaDiagnostic?.jitterMs, " ms")}</strong></span><span>Perda <strong>{formatMediaMetric(mediaDiagnostic?.packetLossPercent, "%")}</strong></span><span>Bitrate <strong>{formatMediaMetric(mediaDiagnostic?.bitrateKbps, " kbps")}</strong></span><span>FPS <strong>{formatMediaMetric(mediaDiagnostic?.framesPerSecond, "")}</strong></span></div></div></div>}

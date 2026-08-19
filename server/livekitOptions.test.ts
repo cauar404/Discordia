@@ -3,8 +3,11 @@ import { DefaultReconnectPolicy } from "livekit-client";
 import { livekitReconnectDelaysMs, livekitRoomOptions } from "../client/src/lib/livekitOptions";
 
 describe("opções de mídia da sala LiveKit", () => {
-  it("ativa adaptação para reduzir trabalho de vídeo desnecessário", () => {
-    expect(livekitRoomOptions.adaptiveStream).toBe(true);
+  it("ativa adaptação preservando a densidade visual real de telas de alta resolução", () => {
+    expect(livekitRoomOptions.adaptiveStream).toEqual({
+      pixelDensity: "screen",
+      pauseVideoInBackground: true,
+    });
     expect(livekitRoomOptions.dynacast).toBe(true);
     expect(livekitRoomOptions.publishDefaults).toMatchObject({
       dtx: true,

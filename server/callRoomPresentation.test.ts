@@ -95,4 +95,10 @@ describe("apresentação da transmissão na sala de chamadas", () => {
     expect(globalStyles).toContain(".app-shell:not(.call-active) .voice-room-participant{width:152px;height:86px");
     expect(globalStyles).toContain(".app-shell:not(.call-active) .voice-room .relative>.mt-7 .button:nth-child(2){display:none}");
   });
+
+  it("prioriza a camada alta da transmissão aberta e usa 720p60 como perfil padrão", () => {
+    expect(callRoomSource).toContain('useState<ScreenShareQuality>("720p60")');
+    expect(callRoomSource).toContain("publication.setVideoQuality(trackKey(screenShare) === focusedScreenShareKey ? VideoQuality.HIGH : VideoQuality.MEDIUM)");
+    expect(callRoomSource).toContain('contentHint: nextQuality.endsWith("60") ? "motion" : "detail"');
+  });
 });

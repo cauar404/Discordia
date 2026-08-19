@@ -245,3 +245,22 @@
 
 /* Quem já está conectado não recebe ações redundantes de entrar na própria chamada. */
 .app-shell.call-active .voice-room .relative>.mt-7{display:none}
+
+/* Estado pré-entrada: presença central e leve, com miniaturas antes da ação principal. */
+.app-shell:not(.call-active) .voice-room{position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:2rem;background:radial-gradient(circle at 50% 34%,rgba(88,101,242,.28),transparent 25%),radial-gradient(circle at 50% 100%,rgba(77,88,210,.34),transparent 58%),linear-gradient(135deg,#11152a 0%,#1a1d59 46%,#242660 100%)}
+.app-shell:not(.call-active) .voice-room::after{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(5,7,18,.08),rgba(5,7,18,.2));content:""}
+.app-shell:not(.call-active) .voice-room>.voice-aurora{display:none}
+.app-shell:not(.call-active) .voice-room>.relative{position:relative;z-index:1;display:flex;max-width:640px;flex-direction:column;align-items:center;padding:1.25rem;text-align:center}
+.app-shell:not(.call-active) .voice-room>.relative>svg,.app-shell:not(.call-active) .voice-room .eyebrow{display:none}
+.app-shell:not(.call-active) .voice-room h1{margin-top:.4rem;color:#fff;font-size:1.55rem;font-weight:750;letter-spacing:-.035em}
+.app-shell:not(.call-active) .voice-room .relative>p:not(.eyebrow){max-width:390px;margin-top:.4rem;color:#d8dcfa;font-size:.82rem;line-height:1.4}
+.app-shell:not(.call-active) .voice-room-presence{display:flex;width:auto;min-width:190px;max-width:100%;flex-direction:column;margin:0 0 1rem;border:0;border-radius:0;background:transparent;padding:0;box-shadow:none;backdrop-filter:none}
+.app-shell:not(.call-active) .voice-room-participants{order:-1;gap:.45rem;margin:0;flex-wrap:nowrap}
+.app-shell:not(.call-active) .voice-room-participant{width:92px;height:56px;justify-content:center;overflow:hidden;border:1px solid rgba(255,255,255,.18);border-radius:8px;background:linear-gradient(145deg,rgba(255,255,255,.22),rgba(255,255,255,.09));padding:0;box-shadow:0 10px 24px rgba(4,6,20,.16)}
+.app-shell:not(.call-active) .voice-room-participant:hover{background:linear-gradient(145deg,rgba(255,255,255,.31),rgba(255,255,255,.14));transform:translateY(-2px)}
+.app-shell:not(.call-active) .voice-room-participant>span:last-child{display:none}
+.app-shell:not(.call-active) .voice-room-participant .presence-dot{right:5px;bottom:5px}
+.app-shell:not(.call-active) .voice-room-presence-heading{order:1;margin-top:.65rem;color:#e3e6ff;font-size:.72rem;font-weight:600;letter-spacing:0;text-transform:none}
+.app-shell:not(.call-active) .voice-room .relative>.mt-7{margin-top:.85rem}
+.app-shell:not(.call-active) .voice-room .relative>.mt-7 .button{min-height:40px;border-color:rgba(255,255,255,.28);box-shadow:0 10px 24px rgba(7,9,35,.22)}
+@media(max-width:560px){.app-shell:not(.call-active) .voice-room{padding:1rem}.app-shell:not(.call-active) .voice-room>.relative{padding:1rem}.app-shell:not(.call-active) .voice-room-participant{width:74px;height:50px}.app-shell:not(.call-active) .voice-room-participants{gap:.35rem}.app-shell:not(.call-active) .voice-room .relative>.mt-7{width:100%;flex-wrap:wrap;justify-content:center}}

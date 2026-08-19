@@ -94,7 +94,7 @@ function ScreenShareCard({ track, audioTrack, mix, selected, onSelect, onStopWat
   </ContextMenu>;
 }
 
-export function CallRoom({ kind, onLeave, voiceVideoSettings, onVoiceVideoSettingsChange }: { kind: CallKind; onLeave: () => void | Promise<void>; voiceVideoSettings?: VoiceVideoSettings; onVoiceVideoSettingsChange?: (settings: VoiceVideoSettings) => void | Promise<unknown> }) {
+export function CallRoom({ kind, onLeave, isMinimized = false, onMinimize, onRestore, voiceVideoSettings, onVoiceVideoSettingsChange }: { kind: CallKind; onLeave: () => void | Promise<void>; isMinimized?: boolean; onMinimize?: () => void; onRestore?: () => void; voiceVideoSettings?: VoiceVideoSettings; onVoiceVideoSettingsChange?: (settings: VoiceVideoSettings) => void | Promise<unknown> }) {
   const connectionState = useConnectionState();
   const participants = useParticipants();
   const mediaTracks = useTracks([Track.Source.Camera, Track.Source.ScreenShare]);
@@ -245,10 +245,15 @@ export function CallRoom({ kind, onLeave, voiceVideoSettings, onVoiceVideoSettin
   const stageLabel = focusedScreenShare ? `${displayName(focusedScreenShare.participant)} está compartilhando a tela` : "Palco da chamada";
   const gridSummary = getCallGridSummary(participants.length, screenShares.length);
   const isReconnecting = connectionState === ConnectionState.Reconnecting;
-  return <section className={cn("call-room", screenShares.length > 0 && "has-screen-share", focusedScreenShare && "has-focused-share")} aria-label="Sala de chamada">
+  return <section className={cn("call-room", screenShares.length > 0 && "has-screen-share", focusedScreenShare && "has-focused-share", isMinimized && "is-minimized")} aria-label="Sala de chamada">
+    <section className="call-minibar" aria-label="Chamada em andamento">
+      <button type="button" className="call-minibar-main" onClick={onRestore} aria-label="Restaurar chamada"><span className="call-minibar-pulse" /><span className="call-minibar-copy"><strong>{kind === "video" ? "Chamada de vídeo" : "Chamada de voz"}</strong><small>{participants.length} participante{participants.length === 1 ? "" : "s"}{isScreenShareEnabled ? " · transmitindo tela" : " · em andamento"}</small></span><Maximize2 className="size-4" /></button>
+      <button type="button" className={cn("call-minibar-action", !isMicrophoneEnabled && "is-off")} onClick={() => void toggleMicrophone()} disabled={pushToTalkEnabled} aria-label={isMicrophoneEnabled ? "Silenciar microfone" : "Ativar microfone"}>{isMicrophoneEnabled ? <Mic className="size-4" /> : <MicOff className="size-4" />}</button>
+      <button type="button" className="call-minibar-action is-end" onClick={() => void onLeave()} aria-label="Sair da chamada"><PhoneOff className="size-4" /></button>
+    </section>
     <header className="call-topbar call-topbar-modern">
       <div className="call-room-identity"><span className="call-room-icon"><Radio className="size-4" /></span><div className="min-w-0"><span className="call-room-kicker">CANAL DE VOZ</span><strong>{kind === "video" ? "Chamada de vídeo" : "Chamada de voz"}</strong></div></div>
-      <div className="call-topbar-status"><span className={cn("live-indicator", isReconnecting && "is-reconnecting")} /><span>{isReconnecting ? "Reconectando…" : "Conectado"}</span><span className="call-status-divider" /><Users className="size-3.5" /><span>{participants.length}</span><button type="button" className="call-leave-button" onClick={() => void onLeave()}><PhoneOff className="size-4" /><span>Sair</span></button></div>
+      <div className="call-topbar-status"><span className={cn("live-indicator", isReconnecting && "is-reconnecting")} /><span>{isReconnecting ? "Reconectando…" : "Conectado"}</span><span className="call-status-divider" /><Users className="size-3.5" /><span>{participants.length}</span><button type="button" className="call-minimize-button" onClick={onMinimize} aria-label="Minimizar chamada"><Minimize2 className="size-4" /><span>Minimizar</span></button><button type="button" className="call-leave-button" onClick={() => void onLeave()}><PhoneOff className="size-4" /><span>Sair</span></button></div>
     </header>
     {isReconnecting && <div className="call-reconnect-banner" role="status"><Gauge className="size-4" /><span>A conexão oscilou. A transmissão está sendo retomada automaticamente.</span></div>}
     <div className="call-main call-main-modern">

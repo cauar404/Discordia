@@ -167,6 +167,19 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+          if (id.includes("livekit")) return "livekit";
+          if (id.includes("@radix-ui")) return "radix-ui";
+          if (id.includes("socket.io-client") || id.includes("engine.io-client")) return "realtime";
+          if (id.includes("lucide-react")) return "icons";
+          if (id.includes("@tanstack") || id.includes("@trpc")) return "data-client";
+          if (id.includes("/node_modules/react/") || id.includes("/node_modules/react-dom/") || id.includes("/node_modules/scheduler/")) return "react-core";
+        },
+      },
+    },
   },
   server: {
     host: true,

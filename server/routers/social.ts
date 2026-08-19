@@ -356,6 +356,31 @@ export const socialRouter = router({
       publishPlatformUpdate({ type: "call", id: created.id });
       return { callId: created.id };
     }),
+    connect: protectedProcedure.input(z.object({ kind: z.enum(["voice", "video"]), channelId: z.number().int().positive().nullable().optional(), conversationId: z.number().int().positive().nullable().optional() }).refine(input => Boolean(input.channelId) !== Boolean(input.conversationId), "Escolha um canal ou uma conversa direta.")).mutation(async ({ ctx, input }) => {
+      requireApprovedUser(ctx.user);
+      const db = await requireDatabase();
+      if (input.channelId) await requireChannelAccess(db, input.channelId, ctx.user.id);
+      if (input.conversationId) await requireConversationAccess(db, input.conversationId, ctx.user.id);
+      const scope = input.channelId ? eq(calls.channelId, input.channelId) : eq(calls.conversationId, input.conversationId!);
+      let [call] = await db.select().from(calls).where(and(scope, inArray(calls.status, ["ringing", "active"]))).orderBy(desc(calls.createdAt)).limit(1);
+      if (!call) {
+        const roomName = `circulo-${input.channelId ? "channel" : "direct"}-${input.channelId ?? input.conversationId}-${crypto.randomUUID()}`;
+        const [created] = await db.insert(calls).values({ initiatorUserId: ctx.user.id, channelId: input.channelId ?? null, conversationId: input.conversationId ?? null, providerRoomName: roomName, kind: input.kind, status: "ringing" }).$returningId();
+        [call] = await db.select().from(calls).where(eq(calls.id, created.id)).limit(1);
+        const recipients = input.channelId
+          ? await db.select({ userId: communityMembers.userId }).from(communityMembers).innerJoin(channels, eq(channels.communityId, communityMembers.communityId)).where(eq(channels.id, input.channelId))
+          : await db.select({ userId: directConversationMembers.userId }).from(directConversationMembers).where(eq(directConversationMembers.conversationId, input.conversationId!));
+        await Promise.all(recipients.filter(recipient => recipient.userId !== ctx.user.id).map(recipient => db.insert(notifications).values({ userId: recipient.userId, type: "incoming_call", payload: { callId: created.id, kind: input.kind } })));
+      }
+      if (!call) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Não foi possível preparar a chamada." });
+      const configuration = liveKitConfiguration();
+      const token = new AccessToken(configuration.apiKey, configuration.apiSecret, { identity: String(ctx.user.id), name: ctx.user.name ?? `Usuário ${ctx.user.id}` });
+      token.addGrant({ roomJoin: true, room: call.providerRoomName, canPublish: true, canSubscribe: true, canPublishData: true });
+      await db.insert(callParticipants).values({ callId: call.id, userId: ctx.user.id, joinedAt: new Date(), leftAt: null }).onDuplicateKeyUpdate({ set: { joinedAt: new Date(), leftAt: null } });
+      if (call.status === "ringing") await db.update(calls).set({ status: "active", startedAt: new Date() }).where(eq(calls.id, call.id));
+      publishPlatformUpdate({ type: "call", id: call.id });
+      return { serverUrl: configuration.url, token: await token.toJwt(), call };
+    }),
     join: protectedProcedure.input(z.object({ callId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
       requireApprovedUser(ctx.user);
       const db = await requireDatabase();

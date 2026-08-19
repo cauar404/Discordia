@@ -128,3 +128,11 @@
 - [ ] Validar em chamada real os cenários de vídeo, streaming e jogo, documentando limites de conteúdo protegido pelo navegador.
 - [x] Instrumentar estatísticas WebRTC de jitter, perda de pacotes, RTT, bitrate e queda de quadros para diferenciar rota de mídia, Wi-Fi e adaptação de codec.
 - [ ] Avaliar a localização e a rota da infraestrutura LiveKit em relação aos participantes para reduzir latência e perda sem depender de aumento de banda local.
+- [x] Permitir minimizar a chamada em uma janela persistente e continuar navegando por comunidades, canais, mensagens e configurações sem desconectar.
+- [x] Criar controles claros para restaurar, minimizar e encerrar a chamada, preservando o estado de mídia e o acesso a participantes.
+- [x] Substituir os acentos dourados por uma paleta escura fria e unificar superfícies, tipografia, estados e espaçamentos da aplicação.
+- [x] Refinar as rotas e transições do aplicativo para uma navegação mais clara e contínua durante conversas e chamadas.
+- [x] Medir e reduzir atrasos percebidos ao entrar em chamadas e enviar mensagens, priorizando atualização otimista e carregamento sob demanda.
+- [x] Substituir o acento quente residual da tela de acesso por tons frios consistentes com a nova identidade visual.
+- [ ] Validar em desktop e mobile que a chamada minimizada permite executar tarefas de mensagens e navegação sem interrupção de áudio ou vídeo.
+- [x] Dividir o bundle inicial do aplicativo para reduzir o carregamento antes de abrir mensagens, comunidades e chamadas.

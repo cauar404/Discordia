@@ -39,6 +39,7 @@ export function DirectMessagesDialog() {
   const [selectedPeople, setSelectedPeople] = useState<number[]>([]);
   const [groupTitle, setGroupTitle] = useState("");
   const [call, setCall] = useState<ActiveCall | null>(null);
+  const [callMinimized, setCallMinimized] = useState(false);
   const [isSomeoneTyping, setIsSomeoneTyping] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const socketRef = useRef<ReturnType<typeof io> | null>(null);
@@ -75,8 +76,7 @@ export function DirectMessagesDialog() {
   const update = trpc.social.directs.update.useMutation({ onSuccess: () => { setEditingId(null); void utils.social.directs.messages.invalidate(); }, onError: error => toast.error(error.message) });
   const remove = trpc.social.directs.remove.useMutation({ onSuccess: () => utils.social.directs.messages.invalidate(), onError: error => toast.error(error.message) });
   const markRead = trpc.social.directs.markRead.useMutation();
-  const startCall = trpc.social.calls.start.useMutation();
-  const joinCall = trpc.social.calls.join.useMutation();
+  const connectCall = trpc.social.calls.connect.useMutation();
   const leaveCall = trpc.social.calls.leave.useMutation();
   const endCall = trpc.social.calls.end.useMutation();
   const updateVoiceSettings = trpc.platform.settings.update.useMutation({ onSuccess: () => utils.platform.profile.me.invalidate(), onError: error => toast.error(error.message) });
@@ -122,8 +122,14 @@ export function DirectMessagesDialog() {
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!conversationId || (!draft.trim() && !files.length)) return;
-    const uploads = await Promise.all(files.map(async file => ({ fileName: file.name, mimeType: file.type || "application/octet-stream", base64: await encodeFile(file) })));
-    await send.mutateAsync({ conversationId, content: draft.trim(), files: uploads, replyToMessageId: replyTo });
+    const previousDraft = draft;
+    const previousFiles = files;
+    const previousReply = replyTo;
+    setDraft(""); setFiles([]); setReplyTo(null);
+    try {
+      const uploads = await Promise.all(previousFiles.map(async file => ({ fileName: file.name, mimeType: file.type || "application/octet-stream", base64: await encodeFile(file) })));
+      await send.mutateAsync({ conversationId, content: previousDraft.trim(), files: uploads, replyToMessageId: previousReply });
+    } catch { setDraft(previousDraft); setFiles(previousFiles); setReplyTo(previousReply); }
   }
 
   function togglePerson(userId: number) {
@@ -137,8 +143,8 @@ export function DirectMessagesDialog() {
       return;
     }
     try {
-      const created = await startCall.mutateAsync({ kind, conversationId });
-      const credentials = await joinCall.mutateAsync({ callId: created.callId });
+      const credentials = await connectCall.mutateAsync({ kind, conversationId });
+      setCallMinimized(false);
       setCall({ callId: credentials.call.id, serverUrl: credentials.serverUrl, token: credentials.token, kind: credentials.call.kind });
       await utils.social.calls.active.invalidate();
     } catch (error) {
@@ -151,7 +157,7 @@ export function DirectMessagesDialog() {
     const currentCall = call;
     if (!currentCall || callClosingRef.current === currentCall.callId) return;
     callClosingRef.current = currentCall.callId;
-    setCall(null);
+    setCall(null); setCallMinimized(false);
     try {
       await leaveCall.mutateAsync({ callId: currentCall.callId });
       await utils.social.calls.active.invalidate();
@@ -162,7 +168,8 @@ export function DirectMessagesDialog() {
     }
   }
 
-  return <Dialog open={open} onOpenChange={setOpen}>
+  return <>
+    <Dialog open={open} onOpenChange={setOpen}>
     <DialogTrigger asChild><button className="dm-row w-full"><span className="grid size-7 place-items-center rounded-lg bg-[#cbb38a]/15 text-[#dec99d]"><MessageCircle className="size-4" /></span><span className="truncate">Mensagens diretas</span></button></DialogTrigger>
     <DialogContent className="border-white/10 bg-[#121722] p-0 text-white sm:max-w-5xl">
       <DialogHeader className="sr-only"><DialogTitle>Mensagens diretas</DialogTitle><DialogDescription>Conversas privadas do seu círculo.</DialogDescription></DialogHeader>
@@ -177,7 +184,8 @@ export function DirectMessagesDialog() {
         </section>
       </div>
       <Dialog open={newConversationOpen} onOpenChange={setNewConversationOpen}><DialogContent className="border-white/10 bg-[#171c27] text-white sm:max-w-sm"><DialogHeader><DialogTitle>Nova mensagem direta ou grupo</DialogTitle><DialogDescription className="text-slate-400">Selecione até 14 pessoas; duas pessoas formam uma conversa direta.</DialogDescription></DialogHeader><Input value={groupTitle} onChange={event => setGroupTitle(event.target.value)} placeholder="Nome do grupo (opcional)" className="border-white/10 bg-white/5 text-white" /><div className="max-h-64 space-y-1 overflow-y-auto">{(people.data ?? []).filter(person => person.userId !== profile.data?.user.id).map(person => <button key={person.userId} onClick={() => togglePerson(person.userId)} className={cn("flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left", selectedPeople.includes(person.userId) ? "bg-[#cbb38a]/15" : "hover:bg-white/5")}><span className="grid size-8 place-items-center rounded-lg bg-[#cbb38a]/15 text-sm text-[#dec99d]">{initials(person.displayName)}</span><span className="min-w-0 flex-1"><strong className="block truncate text-sm">{person.displayName}</strong><small className="text-xs text-slate-500">{person.customStatus || person.presence}</small></span>{selectedPeople.includes(person.userId) && <UserPlus className="size-4 text-[#dec99d]" />}</button>)}{people.isLoading && <Loader2 className="mx-auto my-6 size-4 animate-spin text-slate-500" />}</div><Button disabled={!selectedPeople.length || create.isPending} onClick={() => create.mutate({ participantUserIds: selectedPeople, title: selectedPeople.length > 1 && groupTitle.trim() ? groupTitle.trim() : null })} className="w-full bg-[#cbb38a] text-[#141820] hover:bg-[#dfca9c]">Criar conversa</Button></DialogContent></Dialog>
-      {call && <Suspense fallback={<div className="call-overlay"><div className="call-loading-overlay">Preparando a chamada…</div></div>}><CallOverlay call={call} onLeave={closeCall} voiceVideoSettings={profile.data?.settings?.voiceVideo as Record<string, string | boolean> | undefined} onVoiceVideoSettingsChange={settings => updateVoiceSettings.mutateAsync({ voiceVideo: settings })} /></Suspense>}
     </DialogContent>
-  </Dialog>;
+    </Dialog>
+    {call && <Suspense fallback={<div className="call-overlay"><div className="call-loading-overlay">Preparando a chamada…</div></div>}><CallOverlay call={call} onLeave={closeCall} isMinimized={callMinimized} onMinimize={() => { setCallMinimized(true); setOpen(false); }} onRestore={() => setCallMinimized(false)} voiceVideoSettings={profile.data?.settings?.voiceVideo as Record<string, string | boolean> | undefined} onVoiceVideoSettingsChange={settings => updateVoiceSettings.mutateAsync({ voiceVideo: settings })} /></Suspense>}
+  </>;
 }

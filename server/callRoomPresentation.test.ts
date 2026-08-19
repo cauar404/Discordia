@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 
 const callRoomSource = readFileSync("client/src/components/CallRoom.tsx", "utf8");
 const callRoomStyles = readFileSync("client/src/components/CallRoom.css", "utf8");
+const overlaySource = readFileSync("client/src/components/CallOverlay.tsx", "utf8");
+const globalStyles = readFileSync("client/src/index.css", "utf8");
 
 describe("apresentação da transmissão na sala de chamadas", () => {
   it("mantém cartões de transmissão dentro da mesma grade de participantes", () => {
@@ -25,5 +27,18 @@ describe("apresentação da transmissão na sala de chamadas", () => {
     expect(callRoomStyles).toContain(".call-main-modern { min-height:0; flex:1; grid-template-columns:minmax(0,1fr)");
     expect(callRoomStyles).toContain(".call-participant-card,.call-share-tile { min-width:0; min-height:0; align-self:center; aspect-ratio:16 / 9");
     expect(callRoomStyles).toContain(".call-participant-grid.is-solo { grid-template-columns:minmax(260px,520px); justify-content:center;");
+  });
+
+  it("permite minimizar e restaurar a chamada sem desmontar a sala LiveKit", () => {
+    expect(callRoomSource).toContain('className="call-minibar"');
+    expect(callRoomSource).toContain('onClick={onMinimize}');
+    expect(overlaySource).toContain('isMinimized = false');
+    expect(overlaySource).toContain('<LiveKitRoom serverUrl={call.serverUrl} token={call.token} connect');
+  });
+
+  it("mantém a barra minimizada interativa sem bloquear a navegação externa", () => {
+    expect(callRoomStyles).toContain('.call-room.is-minimized>:not(.call-minibar) { display:none; }');
+    expect(globalStyles).toContain('.call-overlay.is-minimized{pointer-events:none;background:transparent}');
+    expect(globalStyles).toContain('pointer-events:auto');
   });
 });

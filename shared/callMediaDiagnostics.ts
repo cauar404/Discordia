@@ -87,7 +87,8 @@ export function collectCallMediaMetrics(report: RTCStatsReport, elapsedMs: numbe
     roundTripTimeMs: milliseconds(asNumber(remoteInbound?.roundTripTime) ?? asNumber(candidatePair?.currentRoundTripTime)),
     jitterMs: milliseconds(asNumber(inbound?.jitter) ?? asNumber(remoteInbound?.jitter)),
     packetLossPercent: totalPackets && totalPackets > 0 && packetsLost !== undefined ? Number(((packetsLost / totalPackets) * 100).toFixed(1)) : undefined,
-    bitrateKbps: bytes !== undefined && previousBytes !== undefined && elapsedMs > 0 ? Math.max(0, Math.round(((bytes - previousBytes) * 8) / elapsedMs)) : undefined,
+    // Um contador que recua indica troca/reinicialização da trilha, não bitrate zero.
+    bitrateKbps: bytes !== undefined && previousBytes !== undefined && bytes >= previousBytes && elapsedMs > 0 ? Math.round(((bytes - previousBytes) * 8) / elapsedMs) : undefined,
     framesDropped: asNumber(inbound?.framesDropped),
     framesPerSecond: asNumber(inbound?.framesPerSecond) ?? asNumber(outbound?.framesPerSecond),
     qualityLimitationReason: typeof outbound?.qualityLimitationReason === "string" && outbound.qualityLimitationReason !== "none" ? outbound.qualityLimitationReason : undefined,

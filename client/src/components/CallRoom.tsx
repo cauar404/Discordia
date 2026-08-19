@@ -118,6 +118,7 @@ export function CallRoom({ kind, onLeave, isMinimized = false, onMinimize, onRes
   const pushToTalkSequenceRef = useRef(0);
   const microphoneSignalRef = useRef<number | undefined>(microphoneToggleSignal);
   const lastCandidatePairRef = useRef<string | null>(null);
+  const diagnosticSampleRef = useRef<{ trackKey: string | null; bytes?: number; sampledAt?: number }>({ trackKey: null });
   const isEmbeddedPreview = typeof window !== "undefined" && window.top !== window.self;
 
   const tracks = useMemo(() => mediaTracks.filter((track): track is TrackReference => track.publication !== undefined), [mediaTracks]);
@@ -128,6 +129,8 @@ export function CallRoom({ kind, onLeave, isMinimized = false, onMinimize, onRes
   const voiceTracks = useMemo(() => new Map(remoteAudioTracks.filter(track => track.source === Track.Source.Microphone).map(track => [track.participant.identity, track])), [remoteAudioTracks]);
   const screenShareAudioTracks = useMemo(() => remoteAudioTracks.filter(track => track.source === Track.Source.ScreenShareAudio), [remoteAudioTracks]);
   const diagnosticScreenShare = useMemo(() => focusedScreenShare ?? screenShares.find(track => track.participant.identity === localParticipant.identity), [focusedScreenShare, localParticipant.identity, screenShares]);
+  const diagnosticScreenShareKey = diagnosticScreenShare ? trackKey(diagnosticScreenShare) : null;
+  const diagnosticRtcTrack = diagnosticScreenShare?.publication?.track;
 
   useEffect(() => {
     if (focusedScreenShareKey && !screenShares.some(track => trackKey(track) === focusedScreenShareKey)) setFocusedScreenShareKey(null);
@@ -145,19 +148,24 @@ export function CallRoom({ kind, onLeave, isMinimized = false, onMinimize, onRes
   useEffect(() => { if (!isScreenShareEnabled) setActiveQuality(null); }, [isScreenShareEnabled]);
   useEffect(() => {
     let cancelled = false;
-    let previousBytes: number | undefined;
-    let previousSampleAt = Date.now();
-    const rtcTrack = diagnosticScreenShare?.publication?.track;
-    if (!canReadRTCStats(rtcTrack)) { setMediaDiagnostic(null); return; }
+    if (!diagnosticScreenShareKey || !canReadRTCStats(diagnosticRtcTrack)) { diagnosticSampleRef.current = { trackKey: null }; setMediaDiagnostic(null); return; }
+    if (diagnosticSampleRef.current.trackKey !== diagnosticScreenShareKey) {
+      diagnosticSampleRef.current = { trackKey: diagnosticScreenShareKey };
+      setMediaDiagnostic(null);
+    }
     const sample = async () => {
       try {
-        const report = await rtcTrack.getRTCStatsReport();
+        const report = await diagnosticRtcTrack.getRTCStatsReport();
         if (!report || cancelled) return;
         const now = Date.now();
-        const metrics = collectCallMediaMetrics(report, now - previousSampleAt, previousBytes);
+        const previousSample = diagnosticSampleRef.current;
+        const metrics = collectCallMediaMetrics(report, previousSample.sampledAt ? now - previousSample.sampledAt : 0, previousSample.bytes);
         const rtp = Array.from(report.values()).find(stat => (stat.type === "outbound-rtp" || stat.type === "inbound-rtp") && stat.kind === "video");
-        previousBytes = typeof rtp?.bytesSent === "number" ? rtp.bytesSent : typeof rtp?.bytesReceived === "number" ? rtp.bytesReceived : previousBytes;
-        previousSampleAt = now;
+        diagnosticSampleRef.current = {
+          trackKey: diagnosticScreenShareKey,
+          bytes: typeof rtp?.bytesSent === "number" ? rtp.bytesSent : typeof rtp?.bytesReceived === "number" ? rtp.bytesReceived : previousSample.bytes,
+          sampledAt: now,
+        };
         const route = metrics.candidatePair;
         const routeSignature = route ? [route.protocol ?? "unknown", route.localCandidateType ?? "unknown", route.remoteCandidateType ?? "unknown", route.relayProtocol ?? "none", route.usesRelay ? "relay" : "direct"].join(":") : null;
         if (routeSignature && routeSignature !== lastCandidatePairRef.current) {
@@ -165,12 +173,12 @@ export function CallRoom({ kind, onLeave, isMinimized = false, onMinimize, onRes
           console.info("[Círculo LiveKit] Rota WebRTC da transmissão", route);
         }
         setMediaDiagnostic(diagnoseCallMedia(metrics));
-      } catch { if (!cancelled) setMediaDiagnostic(null); }
+      } catch { /* Mantém a última amostra confirmada; uma falha temporária não vira bitrate zero. */ }
     };
     void sample();
     const interval = window.setInterval(() => { void sample(); }, 2_500);
     return () => { cancelled = true; window.clearInterval(interval); };
-  }, [diagnosticScreenShare]);
+  }, [diagnosticRtcTrack, diagnosticScreenShareKey]);
   useEffect(() => {
     setPushToTalkEnabled(voiceVideoSettings?.pushToTalk === true);
     if (typeof voiceVideoSettings?.pushToTalkKey === "string") setPushToTalkKey(voiceVideoSettings.pushToTalkKey);
@@ -286,7 +294,7 @@ export function CallRoom({ kind, onLeave, isMinimized = false, onMinimize, onRes
     {focusedScreenShare && shouldShowFocusedScreenStage(focusedScreenShareKey) && <section ref={stageRef} className="call-stage call-stage-modern" aria-label={stageLabel}>
       <VideoTrack trackRef={focusedScreenShare} className="call-screen-video" />
       <div className="call-screen-caption"><MonitorUp className="size-4" /><span>{stageLabel}</span></div>
-      <div className="call-stage-actions"><button type="button" className="call-stage-close" onClick={() => setFocusedScreenShareKey(null)} aria-label="Fechar transmissão expandida"><X className="size-4" /></button><button type="button" className="call-fullscreen-control" onClick={() => void toggleStageFullscreen()} aria-label={isStageFullscreen ? "Sair da tela cheia" : "Ver tela compartilhada em tela cheia"}>{isStageFullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}</button></div>
+      <button type="button" className="call-stage-close" onClick={() => setFocusedScreenShareKey(null)} aria-label="Fechar transmissão expandida"><X className="size-4" /></button><div className="call-stage-actions"><button type="button" className="call-fullscreen-control" onClick={() => void toggleStageFullscreen()} aria-label={isStageFullscreen ? "Sair da tela cheia" : "Ver tela compartilhada em tela cheia"}>{isStageFullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}</button></div>
     </section>}
     <section className="call-dock" aria-label="Controles rápidos da chamada">
       <button type="button" className={cn("call-dock-control", !isMicrophoneEnabled && "is-off", pushToTalkEnabled && "is-active")} onClick={() => void toggleMicrophone()} disabled={pushToTalkEnabled} aria-label={pushToTalkEnabled ? `Aperte ${pushToTalkKeyLabel(pushToTalkKey)} para falar` : isMicrophoneEnabled ? "Desativar microfone" : "Ativar microfone"}>{pushToTalkEnabled || isMicrophoneEnabled ? <Mic className="size-5" /> : <MicOff className="size-5" />}<span>{pushToTalkEnabled ? (isPushToTalkPressed ? "Falando" : "Aperte para falar") : "Microfone"}</span></button>

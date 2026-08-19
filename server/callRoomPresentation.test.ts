@@ -101,4 +101,11 @@ describe("apresentação da transmissão na sala de chamadas", () => {
     expect(callRoomSource).toContain("publication.setVideoQuality(trackKey(screenShare) === focusedScreenShareKey ? VideoQuality.HIGH : VideoQuality.MEDIUM)");
     expect(callRoomSource).toContain('contentHint: nextQuality.endsWith("60") ? "motion" : "detail"');
   });
+
+  it("mantém o último diagnóstico real entre amostras e separa fechar de tela cheia no palco", () => {
+    expect(callRoomSource).toContain("const diagnosticSampleRef = useRef");
+    expect(callRoomSource).toContain("Mantém a última amostra confirmada; uma falha temporária não vira bitrate zero.");
+    expect(callRoomStyles).toContain(".call-stage-actions { position:absolute; top:.6rem; right:.6rem; z-index:2");
+    expect(callRoomStyles).toContain(".call-stage-close { position:absolute; z-index:2; top:.6rem; left:.6rem; }");
+  });
 });

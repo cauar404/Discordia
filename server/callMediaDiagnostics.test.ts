@@ -30,4 +30,12 @@ describe("diagnóstico de transmissão", () => {
       candidatePair: { protocol: "udp", localCandidateType: "relay", remoteCandidateType: "srflx", relayProtocol: "udp", usesRelay: true },
     });
   });
+
+  it("não apresenta bitrate zero quando um contador WebRTC reinicia ou a trilha é substituída", () => {
+    const report = new Map([
+      ["outbound-video", { id: "outbound-video", type: "outbound-rtp", kind: "video", bytesSent: 800 }],
+    ]) as unknown as RTCStatsReport;
+
+    expect(collectCallMediaMetrics(report, 2_500, 1_200).bitrateKbps).toBeUndefined();
+  });
 });

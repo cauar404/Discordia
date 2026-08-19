@@ -160,3 +160,5 @@
 - [x] Ajustar os perfis de captura e publicação de tela para priorizar qualidade visual e fluidez nos espectadores, com bitrate e limites adaptativos adequados.
 - [x] Ajustar a preferência de recepção da transmissão para reduzir congelamentos vistos por participantes remotos sem comprometer a adaptação à rede.
 - [x] Validar por testes a configuração de mídia de alta qualidade e comunicar limites de conteúdo protegido, navegador e rede.
+- [x] Corrigir a atualização contínua das métricas reais de bitrate da transmissão, sem exibir zero como dado quando a amostra estiver indisponível.
+- [x] Reposicionar os controles da transmissão expandida para impedir a sobreposição entre minimizar e sair.

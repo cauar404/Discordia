@@ -152,3 +152,7 @@
 - [ ] Validar a nova composição da sala de chamadas em desktop e mobile, incluindo uma sessão real com múltiplos participantes e compartilhamento de tela.
 - [x] Exibir participantes realmente conectados diretamente na área principal do canal de voz, sem criar aba ou bloco de presença separado e preservando as ações de entrada por áudio e vídeo.
 - [x] Renderizar a chamada LiveKit ativa diretamente no painel principal do canal de voz, sem redirecionar para visualização ou aba separada, mantendo a barra inferior apenas no modo minimizado.
+- [x] Exibir os botões de entrada no canal de voz somente para quem ainda não está conectado à chamada ativa.
+- [x] Mostrar, para quem ainda não entrou, os participantes realmente conectados ao canal de voz na área principal antes dos botões de entrada; ocultar essa lista e as ações de entrada para quem já está na chamada.
+- [x] Redesenhar o estado pré-entrada do canal de voz com miniaturas de participantes conectados, nomes resumidos, fundo azul sutil e uma ação central de entrada, inspirado na referência fornecida.
+- [x] Substituir integralmente o estado pré-entrada atual por uma composição central com miniaturas grandes de participantes, título do canal, resumo de presença e uma única ação de entrada, conforme a referência visual.

@@ -87,5 +87,8 @@ describe("apresentação da transmissão na sala de chamadas", () => {
     expect(globalStyles).toContain(".app-shell:not(.call-active) .voice-room{position:relative;display:flex;align-items:center;justify-content:center");
     expect(globalStyles).toContain(".app-shell:not(.call-active) .voice-room-participants{order:-1");
     expect(globalStyles).toContain(".app-shell:not(.call-active) .voice-room-participant{width:92px;height:56px");
+    expect(globalStyles).toContain(".app-shell:not(.call-active) .voice-room-presence{order:-1;margin:0 0 1.45rem");
+    expect(globalStyles).toContain(".app-shell:not(.call-active) .voice-room-participant{width:152px;height:86px");
+    expect(globalStyles).toContain(".app-shell:not(.call-active) .voice-room .relative>.mt-7 .button:nth-child(2){display:none}");
   });
 });

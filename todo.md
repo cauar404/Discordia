@@ -148,3 +148,5 @@
 - [x] Manter o identificador local do canal conectado para refletir “na chamada” imediatamente, antes da atualização assíncrona de presença retornar.
 - [x] Auditar e otimizar exclusivamente a rota LiveKit para usuários no Brasil, priorizando região próxima, UDP direto, fallback TURN adequado e métricas reais de RTT, jitter, perda e candidate pair, sem alterar a interface ou as funcionalidades.
 - [x] Pesquisar alternativas ao LiveKit com infraestrutura no Brasil ou América do Sul e modalidade gratuita verificável, sem migrar a arquitetura atual.
+- [x] Refinar visualmente a sala de chamadas com uma grade de mídia mais compacta, cartões mais discretos, controles inferiores organizados e hierarquia inspirada no Discord, preservando todas as funções atuais.
+- [ ] Validar a nova composição da sala de chamadas em desktop e mobile, incluindo uma sessão real com múltiplos participantes e compartilhamento de tela.

@@ -259,7 +259,7 @@ export function CallRoom({ kind, onLeave, isMinimized = false, onMinimize, onRes
   const stageLabel = focusedScreenShare ? `${displayName(focusedScreenShare.participant)} está compartilhando a tela` : "Palco da chamada";
   const gridSummary = getCallGridSummary(participants.length, screenShares.length);
   const isReconnecting = connectionState === ConnectionState.Reconnecting;
-  return <section className={cn("call-room", screenShares.length > 0 && "has-screen-share", focusedScreenShare && "has-focused-share", isMinimized && "is-minimized")} aria-label="Sala de chamada">
+  return <section className={cn("call-room", "call-room-polished", screenShares.length > 0 && "has-screen-share", focusedScreenShare && "has-focused-share", isMinimized && "is-minimized")} aria-label="Sala de chamada">
     <section className="call-minibar" aria-label="Chamada em andamento">
       <button type="button" className="call-minibar-main" onClick={onRestore} aria-label="Restaurar chamada"><span className="call-minibar-pulse" /><span className="call-minibar-copy"><strong>{kind === "video" ? "Chamada de vídeo" : "Chamada de voz"}</strong><small>{participants.length} participante{participants.length === 1 ? "" : "s"}{isScreenShareEnabled ? " · transmitindo tela" : " · em andamento"}</small></span><Maximize2 className="size-4" /></button>
       <button type="button" className={cn("call-minibar-action", !isMicrophoneEnabled && "is-off")} onClick={() => void toggleMicrophone()} disabled={pushToTalkEnabled} aria-label={isMicrophoneEnabled ? "Silenciar microfone" : "Ativar microfone"}>{isMicrophoneEnabled ? <Mic className="size-4" /> : <MicOff className="size-4" />}</button>

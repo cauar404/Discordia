@@ -30,6 +30,14 @@ describe("apresentação da transmissão na sala de chamadas", () => {
     expect(callRoomStyles).toContain(".call-participant-grid.is-solo { grid-template-columns:minmax(260px,520px); justify-content:center;");
   });
 
+  it("aplica a composição compacta e preserva uma grade central proporcional", () => {
+    expect(callRoomSource).toContain('"call-room", "call-room-polished"');
+    expect(callRoomStyles).toContain(".call-room-polished .call-participant-grid { grid-template-columns:repeat(auto-fit,minmax(230px,1fr))");
+    expect(callRoomStyles).toContain("max-width:1180px");
+    expect(callRoomStyles).toContain(".call-room-polished .call-dock-control span { display:none; }");
+    expect(callRoomStyles).toContain(".call-room-polished .call-stage-modern { top:58px; right:auto; left:50%; width:min(1080px,calc(100% - 1.5rem))");
+  });
+
   it("permite minimizar e restaurar a chamada sem desmontar a sala LiveKit", () => {
     expect(callRoomSource).toContain('className="call-minibar"');
     expect(callRoomSource).toContain('onClick={onMinimize}');

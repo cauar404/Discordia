@@ -96,11 +96,21 @@
 - [ ] Diagnosticar os indicadores de qualidade da conexão LiveKit e identificar se os travamentos decorrem de rede, CPU, perda de pacotes ou perfil de mídia inadequado.
 - [ ] Exibir dentro da chamada indicadores e recomendações de qualidade para orientar troca de perfil, redução de resolução ou reconexão quando necessário.
 - [x] Ajustar os perfis adaptativos de transmissão para priorizar estabilidade em redes variáveis.
-- [ ] Implementar e testar recuperação específica de conexão LiveKit, com estado visível de reconexão e retomada segura após perda temporária de rede.
+- [x] Implementar e testar recuperação específica de conexão LiveKit, com estado visível de reconexão e retomada segura após perda temporária de rede.
+- [x] Registrar trechos verificáveis da política de reconexão e do estado visual de reconexão aplicados na sala LiveKit.
+- [x] Reexecutar e registrar os testes e o build após a política explícita de reconexão, incluindo a cobertura de livekitOptions.
+- [ ] Validar e documentar em chamada real publicada a retomada da transmissão após uma oscilação temporária de rede.
 - [ ] Validar no Render que o perfil 540p estável reduz travamentos e registrar o comportamento de reconexão da transmissão em rede variável.
 - [ ] Diagnosticar e reduzir travamentos e atrasos específicos da transmissão de vídeo e tela compartilhada, sem alterar o perfil de voz que está estável.
 - [ ] Reorganizar a entrada na chamada em uma grade responsiva de participantes, com cartões compactos e hierarquia visual inspirada em clientes de voz modernos.
-- [ ] Mostrar múltiplas transmissões como miniaturas e permitir expandir uma escolhida no palco, alternar a transmissão visualizada e abrir a transmissão em tela cheia.
+- [x] Mostrar múltiplas transmissões como miniaturas e permitir expandir uma escolhida no palco, alternar a transmissão visualizada e abrir a transmissão em tela cheia.
 - [ ] Adicionar menus contextuais ao clicar com o botão direito em participante e transmissão para volume individual, silenciamento, parar de assistir e controles de transmissão aplicáveis.
 - [x] Preservar a opção nativa de troca de fonte de compartilhamento quando o navegador suportar surface switching e explicar o limite quando não houver suporte.
 - [ ] Ajustar a paleta e os espaçamentos da sala para uma linguagem de interface escura, clara e responsiva, sem reutilizar marcas ou ativos de terceiros.
+- [x] Remover o palco grande automático da transmissão e exibir a tela compartilhada inicialmente como cartão integrado à grade de participantes.
+- [x] Permitir expandir uma transmissão por clique e entrar em tela cheia sem deslocar os controles ou exigir redução do zoom do navegador.
+- [ ] Validar em desktop, tablet e mobile que a grade, as transmissões e os controles permanecem acessíveis com compartilhamento ativo.
+- [ ] Elaborar um plano técnico separado para reduzir travamentos residuais de vídeo/tela após a correção de posicionamento prioritária.
+- [ ] Validar visualmente a sala de chamada ativa em desktop, tablet e mobile, confirmando que dock, palco expandido e painel de opções permanecem acessíveis com compartilhamento de tela aberto.
+- [ ] Capturar evidências verificáveis da chamada ativa com transmissões na grade e palco expandido, incluindo pelo menos desktop e mobile.
+- [ ] Revisar e ajustar a hierarquia visual e o polimento da nova grade da chamada após validação com mídia ativa, caso algum viewport perca legibilidade ou acesso aos controles.

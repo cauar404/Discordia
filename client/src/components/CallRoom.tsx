@@ -1,5 +1,5 @@
 import { AudioTrack, VideoTrack, useConnectionState, useLocalParticipant, useParticipants, useTracks, type TrackReference } from "@livekit/components-react";
-import { AudioLines, ChevronDown, Gauge, Keyboard, Maximize2, Mic, MicOff, Minimize2, MonitorUp, PhoneOff, Radio, ScreenShare, Settings2, SlidersHorizontal, Users, Video, VideoOff, Volume2, VolumeX } from "lucide-react";
+import { AudioLines, ChevronDown, Gauge, Keyboard, Maximize2, Mic, MicOff, Minimize2, MonitorUp, PhoneOff, Radio, ScreenShare, Settings2, SlidersHorizontal, Users, Video, VideoOff, Volume2, VolumeX, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AudioPresets, ConnectionState, Track } from "livekit-client";
 import { cn } from "@/lib/utils";
@@ -7,6 +7,7 @@ import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuLabel, Con
 import { getScreenSharePublishOptions, screenShareProfiles, type ScreenShareQuality } from "@shared/callQuality";
 import { getScreenShareAudioOptions } from "@shared/callAudio";
 import { audioMixKey, deserializeIndividualAudioMixes, INDIVIDUAL_AUDIO_MIX_STORAGE_KEY, normalizeIndividualAudioMix, serializeIndividualAudioMixes, updateIndividualAudioMix, type IndividualAudioMix, type IndividualAudioMixes } from "@shared/callMixer";
+import { getCallGridSummary, shouldShowFocusedScreenStage } from "@shared/callRoomLayout";
 import { isPushToTalkKeyAllowed, pushToTalkKeyLabel } from "@shared/voiceControls";
 import "./CallRoom.css";
 
@@ -213,6 +214,7 @@ export function CallRoom({ kind, onLeave, voiceVideoSettings, onVoiceVideoSettin
   function updateMix(track: TrackReference, update: Partial<IndividualAudioMix>) { setAudioMixes(current => updateIndividualAudioMix(current, trackKey(track), update)); }
 
   const stageLabel = focusedScreenShare ? `${displayName(focusedScreenShare.participant)} está compartilhando a tela` : "Palco da chamada";
+  const gridSummary = getCallGridSummary(participants.length, screenShares.length);
   const isReconnecting = connectionState === ConnectionState.Reconnecting;
   return <section className={cn("call-room", screenShares.length > 0 && "has-screen-share", focusedScreenShare && "has-focused-share")} aria-label="Sala de chamada">
     <header className="call-topbar call-topbar-modern">
@@ -221,15 +223,16 @@ export function CallRoom({ kind, onLeave, voiceVideoSettings, onVoiceVideoSettin
     </header>
     {isReconnecting && <div className="call-reconnect-banner" role="status"><Gauge className="size-4" /><span>A conexão oscilou. A transmissão está sendo retomada automaticamente.</span></div>}
     <div className="call-main call-main-modern">
-      <section ref={stageRef} className="call-stage call-stage-modern" aria-label={stageLabel}>
-        {focusedScreenShare ? <><VideoTrack trackRef={focusedScreenShare} className="call-screen-video" /><div className="call-screen-caption"><MonitorUp className="size-4" /><span>{stageLabel}</span></div><button type="button" className="call-fullscreen-control" onClick={() => void toggleStageFullscreen()} aria-label={isStageFullscreen ? "Sair da tela cheia" : "Ver tela compartilhada em tela cheia"}>{isStageFullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}</button></> : <div className="call-stage-empty"><span className="call-stage-orb"><MonitorUp className="size-7" /></span><h2>{screenShares.length ? "Escolha uma transmissão" : "Palco pronto para compartilhar"}</h2><p>{screenShares.length ? "As transmissões estão abaixo. Clique em uma miniatura para abrir no palco." : "Vídeo, tela e som de uma aba aparecem aqui sem esconder seus controles."}</p><span className="call-stage-hint"><Gauge className="size-3.5" /> Adaptação de qualidade ativa</span></div>}
-      </section>
-      <aside className="call-participant-area call-participant-area-modern" aria-label="Participantes na chamada">
-        <div className="call-section-heading"><span>NA CHAMADA</span><span>{participants.length}</span></div>
-        <div className={cn("call-participant-grid", participants.length === 1 && "is-solo")}>{participants.map(participant => { const voiceTrack = voiceTracks.get(participant.identity); return <ParticipantCard key={participant.identity} participant={participant} cameraTrack={cameraTracks.get(participant.identity)} voiceTrack={voiceTrack} mix={mixFor(voiceTrack)} onMixChange={update => voiceTrack && updateMix(voiceTrack, update)} />; })}</div>
+      <aside className="call-participant-area call-participant-area-modern" aria-label="Participantes e transmissões na chamada">
+        <div className="call-section-heading"><span>NA CHAMADA</span><span>{participants.length}</span>{gridSummary.hasScreenShares && <small><MonitorUp className="size-3.5" /> {gridSummary.screenShareLabel}</small>}</div>
+        <div className={cn("call-participant-grid", gridSummary.itemCount === 1 && "is-solo")}>{participants.map(participant => { const voiceTrack = voiceTracks.get(participant.identity); return <ParticipantCard key={participant.identity} participant={participant} cameraTrack={cameraTracks.get(participant.identity)} voiceTrack={voiceTrack} mix={mixFor(voiceTrack)} onMixChange={update => voiceTrack && updateMix(voiceTrack, update)} />; })}{screenShares.map(track => { const audioTrack = screenShareAudioTracks.find(audio => audio.participant.identity === track.participant.identity); return <ScreenShareCard key={trackKey(track)} track={track} audioTrack={audioTrack} mix={mixFor(audioTrack)} selected={trackKey(track) === focusedScreenShareKey} onSelect={() => openScreenShare(track)} onStopWatching={() => setFocusedScreenShareKey(null)} onFullscreen={() => openScreenShareFullscreen(track)} onMixChange={update => audioTrack && updateMix(audioTrack, update)} onSourceSwitchHelp={showSourceSwitchHelp} isLocal={track.participant.identity === localParticipant.identity} />; })}</div>
       </aside>
     </div>
-    {screenShares.length > 0 && <section className="call-share-strip" aria-label="Transmissões ativas"><div className="call-share-strip-heading"><span><MonitorUp className="size-4" /> TRANSMISSÕES</span><small>{screenShares.length} ao vivo</small></div><div className="call-share-grid">{screenShares.map(track => { const audioTrack = screenShareAudioTracks.find(audio => audio.participant.identity === track.participant.identity); return <ScreenShareCard key={trackKey(track)} track={track} audioTrack={audioTrack} mix={mixFor(audioTrack)} selected={trackKey(track) === focusedScreenShareKey} onSelect={() => openScreenShare(track)} onStopWatching={() => setFocusedScreenShareKey(null)} onFullscreen={() => openScreenShareFullscreen(track)} onMixChange={update => audioTrack && updateMix(audioTrack, update)} onSourceSwitchHelp={showSourceSwitchHelp} isLocal={track.participant.identity === localParticipant.identity} />; })}</div></section>}
+    {focusedScreenShare && shouldShowFocusedScreenStage(focusedScreenShareKey) && <section ref={stageRef} className="call-stage call-stage-modern" aria-label={stageLabel}>
+      <VideoTrack trackRef={focusedScreenShare} className="call-screen-video" />
+      <div className="call-screen-caption"><MonitorUp className="size-4" /><span>{stageLabel}</span></div>
+      <div className="call-stage-actions"><button type="button" className="call-stage-close" onClick={() => setFocusedScreenShareKey(null)} aria-label="Fechar transmissão expandida"><X className="size-4" /></button><button type="button" className="call-fullscreen-control" onClick={() => void toggleStageFullscreen()} aria-label={isStageFullscreen ? "Sair da tela cheia" : "Ver tela compartilhada em tela cheia"}>{isStageFullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}</button></div>
+    </section>}
     <section className="call-dock" aria-label="Controles rápidos da chamada">
       <button type="button" className={cn("call-dock-control", !isMicrophoneEnabled && "is-off", pushToTalkEnabled && "is-active")} onClick={() => void toggleMicrophone()} disabled={pushToTalkEnabled} aria-label={pushToTalkEnabled ? `Aperte ${pushToTalkKeyLabel(pushToTalkKey)} para falar` : isMicrophoneEnabled ? "Desativar microfone" : "Ativar microfone"}>{pushToTalkEnabled || isMicrophoneEnabled ? <Mic className="size-5" /> : <MicOff className="size-5" />}<span>{pushToTalkEnabled ? (isPushToTalkPressed ? "Falando" : "Aperte para falar") : "Microfone"}</span></button>
       <button type="button" className={cn("call-dock-control", !isCameraEnabled && "is-off")} onClick={() => void toggleCamera()} aria-label={isCameraEnabled ? "Desativar câmera" : "Ativar câmera"}>{isCameraEnabled ? <Video className="size-5" /> : <VideoOff className="size-5" />}<span>Câmera</span></button>

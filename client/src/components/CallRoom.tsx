@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { RoomAudioRenderer, VideoTrack, useLocalParticipant, useParticipants, useTracks, type TrackReference } from "@livekit/components-react";
-import { Keyboard, Maximize2, Minimize2, MonitorUp, Mic, MicOff, PhoneOff, ScreenShare, Users, Video, VideoOff } from "lucide-react";
+import { Keyboard, Maximize2, Minimize2, MonitorUp, Mic, MicOff, PhoneOff, ScreenShare, Users, Video, VideoOff, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Track } from "livekit-client";
 import { screenShareProfiles, type ScreenShareQuality } from "@shared/callQuality";
+import { getScreenShareAudioOptions, normalizeRemoteCallVolume, remoteCallVolumeLabel } from "@shared/callAudio";
 import { isPushToTalkKeyAllowed, pushToTalkKeyLabel } from "@shared/voiceControls";
 import "./CallRoom.css";
 
@@ -40,6 +41,9 @@ export function CallRoom({ kind, onLeave, voiceVideoSettings, onVoiceVideoSettin
   const mediaTracks = useTracks([Track.Source.Camera, Track.Source.ScreenShare]);
   const { localParticipant, isCameraEnabled, isMicrophoneEnabled, isScreenShareEnabled } = useLocalParticipant();
   const [quality, setQuality] = useState<ScreenShareQuality>("1080p60");
+  const [includeScreenShareAudio, setIncludeScreenShareAudio] = useState(true);
+  const [remoteAudioVolume, setRemoteAudioVolume] = useState(0.85);
+  const [isRemoteAudioMuted, setIsRemoteAudioMuted] = useState(false);
   const [activeQuality, setActiveQuality] = useState<ScreenShareQuality | null>(null);
   const [isUpdatingShare, setIsUpdatingShare] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
@@ -158,6 +162,7 @@ export function CallRoom({ kind, onLeave, voiceVideoSettings, onVoiceVideoSettin
     try {
       await localParticipant.setScreenShareEnabled(true, {
         video: true,
+        ...getScreenShareAudioOptions(includeScreenShareAudio),
         resolution: profile.resolution,
         contentHint: "detail",
         selfBrowserSurface: "include",
@@ -237,6 +242,16 @@ export function CallRoom({ kind, onLeave, voiceVideoSettings, onVoiceVideoSettin
     }
   }
 
+  function setCallOutputVolume(value: number) {
+    const nextVolume = normalizeRemoteCallVolume(value);
+    setRemoteAudioVolume(nextVolume);
+    if (nextVolume > 0 && isRemoteAudioMuted) setIsRemoteAudioMuted(false);
+  }
+
+  function toggleRemoteAudioMuted() {
+    setIsRemoteAudioMuted(current => !current);
+  }
+
   const stageLabel = primaryScreenShare ? `${displayName(primaryScreenShare.participant)} está compartilhando a tela` : "Aguardando compartilhamento de tela";
 
   return <section className="call-room" aria-label="Sala de chamada">
@@ -261,6 +276,14 @@ export function CallRoom({ kind, onLeave, voiceVideoSettings, onVoiceVideoSettin
         <div className="min-w-0"><span className="call-control-label">Qualidade ao compartilhar</span><p>{activeQuality ? `Preferência ativa: ${screenShareProfiles[activeQuality].label}` : "Selecione antes de compartilhar"}</p></div>
         <div className="flex items-center gap-2"><label className="sr-only" htmlFor="screen-share-quality">Qualidade da tela compartilhada</label><select id="screen-share-quality" value={quality} onChange={event => setQuality(event.target.value as ScreenShareQuality)} disabled={isUpdatingShare} className="call-quality-select"><option value="720p60">720p · 60 fps</option><option value="1080p60">1080p · 60 fps</option></select>{isScreenShareEnabled && activeQuality !== quality && <Button type="button" variant="outline" onClick={() => void applyQuality()} disabled={isUpdatingShare} className="call-apply-quality">Aplicar</Button>}</div>
       </div>
+      <div className="call-audio-row">
+        <div className="min-w-0"><span className="call-control-label">Áudio da transmissão</span><p>{includeScreenShareAudio ? "Solicitar áudio da aba ou do sistema ao compartilhar." : "A tela será compartilhada sem áudio."}</p></div>
+        <label className="call-share-audio-toggle"><input type="checkbox" checked={includeScreenShareAudio} onChange={event => setIncludeScreenShareAudio(event.target.checked)} disabled={isScreenShareEnabled || isUpdatingShare} /><span>Incluir áudio</span></label>
+      </div>
+      <div className="call-audio-row">
+        <div className="min-w-0"><span className="call-control-label">Volume da chamada</span><p>{isRemoteAudioMuted ? "Áudio remoto silenciado neste dispositivo." : `Áudio remoto em ${remoteCallVolumeLabel(remoteAudioVolume)}.`}</p></div>
+        <div className="call-volume-control"><button type="button" className={cn("call-volume-mute", isRemoteAudioMuted && "is-muted")} onClick={toggleRemoteAudioMuted} aria-label={isRemoteAudioMuted ? "Ativar áudio remoto" : "Silenciar áudio remoto"} title={isRemoteAudioMuted ? "Ativar áudio remoto" : "Silenciar áudio remoto"}>{isRemoteAudioMuted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}</button><label className="sr-only" htmlFor="call-output-volume">Volume da chamada</label><input id="call-output-volume" type="range" min="0" max="100" step="1" value={Math.round(remoteAudioVolume * 100)} onChange={event => setCallOutputVolume(Number(event.target.value) / 100)} aria-valuetext={`${remoteCallVolumeLabel(remoteAudioVolume)} de volume da chamada`} /><output aria-live="polite">{remoteCallVolumeLabel(remoteAudioVolume)}</output></div>
+      </div>
       <div className="call-ptt-row">
         <div className="min-w-0"><span className="call-control-label">Microfone</span><p>{pushToTalkEnabled ? `Aperte ${pushToTalkKeyLabel(pushToTalkKey)} para falar.` : "Microfone em modo contínuo."}</p></div>
         <div className="call-ptt-actions"><button type="button" className={cn("call-ptt-toggle", pushToTalkEnabled && "is-active")} onClick={() => void togglePushToTalk()} aria-pressed={pushToTalkEnabled}><Keyboard className="size-3.5" />{pushToTalkEnabled ? "Aperte para falar" : "Ativar aperte para falar"}</button>{pushToTalkEnabled && <button type="button" className={cn("call-key-binding", isChoosingPushToTalkKey && "is-capturing")} onClick={() => setIsChoosingPushToTalkKey(true)}>{isChoosingPushToTalkKey ? "Pressione uma tecla…" : `Tecla: ${pushToTalkKeyLabel(pushToTalkKey)}`}</button>}</div>
@@ -270,9 +293,9 @@ export function CallRoom({ kind, onLeave, voiceVideoSettings, onVoiceVideoSettin
         <button type="button" className={cn("call-control", !isCameraEnabled && "is-off")} onClick={() => void toggleCamera()} aria-label={isCameraEnabled ? "Desativar câmera" : "Ativar câmera"}>{isCameraEnabled ? <Video className="size-5" /> : <VideoOff className="size-5" />}<span>Câmera</span></button>
         <button type="button" className={cn("call-control", isScreenShareEnabled && "is-active")} onClick={() => void toggleScreenShare()} disabled={isUpdatingShare} aria-label={isScreenShareEnabled ? "Parar compartilhamento" : `Compartilhar tela em ${screenShareProfiles[quality].shortLabel}`}>{<ScreenShare className="size-5" />}<span>{isScreenShareEnabled ? "Parar tela" : "Compartilhar"}</span></button>
       </div>
-      <p className="call-quality-note">As opções são preferências de captura e transmissão. O navegador, o dispositivo e a rede podem reduzir resolução ou taxa de quadros para manter a chamada estável.</p>
+      <p className="call-quality-note">Ao compartilhar com áudio, marque também a opção de compartilhar áudio exibida pelo navegador. A disponibilidade depende da aba, do sistema operacional e do navegador. A qualidade da transmissão também pode ser reduzida pela rede ou pelo dispositivo.</p>
       {shareError && <div role="alert" className="call-share-error"><p>{shareError}</p>{displayCaptureBlocked && isEmbeddedPreview && <a className="call-preview-help" href={window.location.href} target="_blank" rel="noreferrer">Abrir o Círculo em nova guia para compartilhar a tela</a>}</div>}
     </footer>
-    <RoomAudioRenderer />
+    <RoomAudioRenderer volume={remoteAudioVolume} muted={isRemoteAudioMuted} />
   </section>;
 }

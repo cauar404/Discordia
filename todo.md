@@ -46,12 +46,12 @@
 - [x] Corrigir a falha de carregamento do perfil autenticado causada pela inicialização de preferências sem campos de atualização.
 - [x] Confirmar na pré-visualização que uma conta administradora aprovada entra na plataforma sem ser redirecionada para aprovação.
 - [x] Detectar o bloqueio de display-capture na pré-visualização incorporada e orientar o uso de um contexto compatível para compartilhar a tela.
-- [ ] Diagnosticar e corrigir a falha de publicação do projeto com base nos registros de build e implantação.
+- [x] Diagnosticar e corrigir a falha de publicação do projeto com base nos registros de build e implantação.
 - [x] Permitir acesso privado por convite sem exigir criação manual de conta, preservando controle de membros e permissões.
 - [ ] Reorganizar a área de tela compartilhada para manter os controles de chamada sempre acessíveis em todos os viewports.
 - [x] Adicionar opção configurável de aperte-para-falar, incluindo seleção da tecla de ativação e comportamento de pressionar/soltar.
-- [ ] Investigar a falha de implantação com logs vazios, reproduzir a preparação de produção e confirmar a publicação após a correção ou diagnóstico.
-- [ ] Orientar a configuração do Círculo como Web Service no Render, incluindo build, variáveis de ambiente e URLs públicas.
+- [x] Investigar a falha de implantação com logs vazios, reproduzir a preparação de produção e confirmar a publicação após a correção ou diagnóstico.
+- [x] Orientar a configuração do Círculo como Web Service no Render, incluindo build, variáveis de ambiente e URLs públicas.
 - [x] Corrigir a configuração de Root Directory do Render para o diretório que contém o package.json do Círculo.
 - [x] Substituir o ZIP no repositório GitHub pelos arquivos fonte versionados do Círculo para permitir o build no Render.
 - [x] Criar um fluxo único e protegido por segredo de ambiente para inicializar o primeiro administrador e permitir a geração dos primeiros convites.
@@ -59,11 +59,18 @@
 - [x] Permitir que usuários autenticados criem as próprias comunidades privadas e entrem em outras por convite.
 - [x] Remover o fluxo de bootstrap administrativo por código da interface e do servidor.
 - [x] Diagnosticar o banco de dados indisponível no Render e documentar a configuração externa necessária para manter contas e comunidades persistentes.
-- [ ] Criar e conectar um banco MySQL persistente compatível ao serviço do Render, aplicar as migrações e validar o cadastro local publicado.
+- [x] Criar e conectar um banco MySQL persistente compatível ao serviço do Render, aplicar as migrações e validar o cadastro local publicado.
 - [x] Configurar um banco MySQL compatível em plano gratuito para a publicação temporária, sem serviço de banco pago no Render.
 - [x] Corrigir a conexão TLS entre o Render e o TiDB após o erro de banco indisponível na publicação.
 - [ ] Remover a inicialização OAuth residual e expor apenas diagnóstico seguro de disponibilidade de banco no ambiente Render.
 - [ ] Executar as migrações Drizzle no TiDB pelo processo de build do Render para criar as tabelas da publicação.
 - [x] Corrigir a migração Drizzle que remove uma chave estrangeira inexistente no TiDB vazio e bloqueia a publicação.
-- [ ] Disparar novo deploy no Render com a migração 0002 corrigida e registrar o resultado da publicação.
+- [x] Disparar novo deploy no Render com a migração 0002 corrigida e registrar o resultado da publicação.
 - [ ] Validar que o build do Render executa pnpm db:migrate com sucesso no TiDB e que o cadastro/login publicado funciona após o deploy.
+- [x] Diagnosticar e corrigir a origem do erro "Zero-length key is not supported" retornado ao criar uma conta na aplicação publicada no Render.
+- [x] Configurar e validar as credenciais LiveKit necessárias para entrar em chamadas de voz e vídeo na aplicação publicada no Render.
+- [x] Permitir a publicação do áudio da transmissão de tela quando o navegador disponibilizar a faixa de áudio.
+- [x] Adicionar controle funcional de volume da chamada, incluindo ajuste e silenciamento de participantes remotos.
+- [ ] Publicar e validar no Render o compartilhamento de áudio e os controles de volume em uma chamada real.
+- [ ] Capturar e registrar os logs do Render mostrando pnpm db:migrate concluído com sucesso no deploy com a migração corrigida.
+- [x] Atualizar a documentação de implantação para tornar pnpm db:migrate parte explícita do Build Command do Render.

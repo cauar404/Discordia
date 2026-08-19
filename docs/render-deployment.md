@@ -12,7 +12,7 @@ No serviço vinculado ao repositório `cauar404/Discordia`, deixe **Root Directo
 | Runtime | Node |
 | Branch | `main` |
 | Root Directory | vazio |
-| Build Command | `pnpm install --frozen-lockfile && pnpm run build` |
+| Build Command | `pnpm install --frozen-lockfile && pnpm db:migrate && pnpm run build` |
 | Start Command | `pnpm start` |
 | Plano | um plano sem hibernação, para preservar Socket.IO e chamadas em tempo real |
 
@@ -48,15 +48,13 @@ Abra **Environment** no serviço Web e adicione as variáveis abaixo. O Render m
 
 Não adicione `PORT`: o Render a fornece ao serviço Web. Também não copie as chaves internas `BUILT_IN_FORGE_*` do ambiente Manus. Recursos de arquivos que dependem desse provedor — como anexos e uploads de avatar — exigirão uma integração de armazenamento externo antes de serem usados em produção fora do Manus.
 
-## 4. Criar as tabelas do banco
+## 4. Criar e atualizar as tabelas do banco
 
-Quando as variáveis acima estiverem salvas, abra o **Shell** do serviço Web no Render e execute uma única vez:
+O comando de build indicado acima executa `pnpm db:migrate` **antes** de gerar a aplicação de produção. Assim, em um banco TiDB vazio, as tabelas, o campo de senha e o índice único de e-mail são criados como parte do deploy; não é necessário abrir o Shell para a primeira migração.
 
-```bash
-pnpm db:migrate
-```
+> Depois de salvar ou alterar a `DATABASE_URL`, confirme que o **Build Command** permanece exatamente como indicado na tabela. Nos logs de deploy, procure a etapa `pnpm db:migrate` concluída antes de `pnpm run build`.
 
-Esse comando aplica as migrações Drizzle, inclusive o campo de senha e o índice único de e-mail. Em seguida, use **Manual Deploy → Clear build cache & deploy** para iniciar a versão mais recente.
+Para uma alteração futura de esquema, envie a nova migração ao repositório e faça um novo deploy. Evite executar migrações concorrentes no Shell enquanto um deploy estiver aplicando o mesmo conjunto de arquivos.
 
 ## 5. Primeiro uso
 

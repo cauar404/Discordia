@@ -6,3 +6,90 @@
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+
+.call-audio-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  max-width: 880px;
+  margin: 0 auto 0.7rem;
+}
+
+.call-audio-row p {
+  margin-top: 0.15rem;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.call-share-audio-toggle,
+.call-volume-control,
+.call-volume-mute {
+  display: inline-flex;
+  align-items: center;
+}
+
+.call-share-audio-toggle {
+  flex-shrink: 0;
+  gap: 0.45rem;
+  color: #cbd5e1;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.call-share-audio-toggle input {
+  width: 0.95rem;
+  height: 0.95rem;
+  accent-color: #cbb38a;
+}
+
+.call-volume-control {
+  min-width: 200px;
+  gap: 0.55rem;
+}
+
+.call-volume-control input[type="range"] {
+  width: 120px;
+  accent-color: #cbb38a;
+}
+
+.call-volume-control output {
+  width: 2.25rem;
+  color: #e2e8f0;
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.call-volume-mute {
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.55rem;
+  background: #1a2230;
+  color: #cbd5e1;
+}
+
+.call-volume-mute:hover,
+.call-volume-mute.is-muted {
+  border-color: rgba(203, 179, 138, 0.62);
+  background: rgba(203, 179, 138, 0.14);
+  color: #f1dfba;
+}
+
+@media (max-width: 720px) {
+  .call-audio-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .call-share-audio-toggle,
+  .call-volume-control {
+    width: 100%;
+  }
+
+  .call-volume-control input[type="range"] {
+    flex: 1;
+    width: auto;
+  }
+}

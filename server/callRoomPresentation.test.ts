@@ -75,4 +75,9 @@ describe("apresentação da transmissão na sala de chamadas", () => {
     expect(homeSource).toContain('className="voice-room-participants"');
     expect(globalStyles).toContain(".voice-room-presence");
   });
+
+  it("oculta as ações redundantes de entrada para quem já está conectado", () => {
+    expect(homeSource).toContain("isInCurrentCall");
+    expect(globalStyles).toContain(".app-shell.call-active .voice-room .relative>.mt-7{display:none}");
+  });
 });

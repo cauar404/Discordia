@@ -94,7 +94,7 @@ function ScreenShareCard({ track, audioTrack, mix, selected, onSelect, onStopWat
   </ContextMenu>;
 }
 
-export function CallRoom({ kind, onLeave, isMinimized = false, onMinimize, onRestore, voiceVideoSettings, onVoiceVideoSettingsChange }: { kind: CallKind; onLeave: () => void | Promise<void>; isMinimized?: boolean; onMinimize?: () => void; onRestore?: () => void; voiceVideoSettings?: VoiceVideoSettings; onVoiceVideoSettingsChange?: (settings: VoiceVideoSettings) => void | Promise<unknown> }) {
+export function CallRoom({ kind, onLeave, isMinimized = false, onMinimize, onRestore, voiceVideoSettings, onVoiceVideoSettingsChange, microphoneToggleSignal, onMicrophoneStateChange }: { kind: CallKind; onLeave: () => void | Promise<void>; isMinimized?: boolean; onMinimize?: () => void; onRestore?: () => void; voiceVideoSettings?: VoiceVideoSettings; onVoiceVideoSettingsChange?: (settings: VoiceVideoSettings) => void | Promise<unknown>; microphoneToggleSignal?: number; onMicrophoneStateChange?: (enabled: boolean) => void }) {
   const connectionState = useConnectionState();
   const participants = useParticipants();
   const mediaTracks = useTracks([Track.Source.Camera, Track.Source.ScreenShare]);
@@ -116,6 +116,7 @@ export function CallRoom({ kind, onLeave, isMinimized = false, onMinimize, onRes
   const [mediaDiagnostic, setMediaDiagnostic] = useState<CallMediaDiagnostic | null>(null);
   const stageRef = useRef<HTMLElement | null>(null);
   const pushToTalkSequenceRef = useRef(0);
+  const microphoneSignalRef = useRef<number | undefined>(microphoneToggleSignal);
   const isEmbeddedPreview = typeof window !== "undefined" && window.top !== window.self;
 
   const tracks = useMemo(() => mediaTracks.filter((track): track is TrackReference => track.publication !== undefined), [mediaTracks]);
@@ -201,6 +202,12 @@ export function CallRoom({ kind, onLeave, isMinimized = false, onMinimize, onRes
   }, [isChoosingPushToTalkKey, localParticipant, pushToTalkEnabled, pushToTalkKey]);
 
   async function toggleMicrophone() { if (!pushToTalkEnabled) try { await localParticipant.setMicrophoneEnabled(!isMicrophoneEnabled); } catch { setShareError("Não foi possível alterar o microfone. Verifique a permissão do navegador."); } }
+  useEffect(() => { onMicrophoneStateChange?.(isMicrophoneEnabled); }, [isMicrophoneEnabled, onMicrophoneStateChange]);
+  useEffect(() => {
+    if (microphoneToggleSignal === undefined || microphoneSignalRef.current === microphoneToggleSignal) return;
+    microphoneSignalRef.current = microphoneToggleSignal;
+    void toggleMicrophone();
+  }, [microphoneToggleSignal]);
   async function toggleCamera() { try { await localParticipant.setCameraEnabled(!isCameraEnabled); } catch { setShareError("Não foi possível alterar a câmera. Verifique a permissão do navegador."); } }
   async function startScreenShare(nextQuality = quality) {
     const profile = screenShareProfiles[nextQuality];

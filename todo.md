@@ -136,3 +136,7 @@
 - [x] Substituir o acento quente residual da tela de acesso por tons frios consistentes com a nova identidade visual.
 - [ ] Validar em desktop e mobile que a chamada minimizada permite executar tarefas de mensagens e navegação sem interrupção de áudio ou vídeo.
 - [x] Dividir o bundle inicial do aplicativo para reduzir o carregamento antes de abrir mensagens, comunidades e chamadas.
+- [x] Exibir no canal de voz um estado persistente de participação quando o usuário já estiver conectado, sem repetir a ação de entrar.
+- [x] Mostrar participantes atuais e estado de chamada em uma barra persistente no aplicativo e no modo minimizado.
+- [x] Adicionar controles imediatos de mutar/desmutar o próprio microfone, restaurar a chamada e sair, mantendo seus estados sincronizados.
+- [ ] Validar os estados de entrar, conectado, minimizado, mutado e sair em canais de voz no desktop e mobile.

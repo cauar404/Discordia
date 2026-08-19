@@ -5,6 +5,7 @@ const callRoomSource = readFileSync("client/src/components/CallRoom.tsx", "utf8"
 const callRoomStyles = readFileSync("client/src/components/CallRoom.css", "utf8");
 const overlaySource = readFileSync("client/src/components/CallOverlay.tsx", "utf8");
 const globalStyles = readFileSync("client/src/index.css", "utf8");
+const homeSource = readFileSync("client/src/pages/Home.tsx", "utf8");
 
 describe("apresentação da transmissão na sala de chamadas", () => {
   it("mantém cartões de transmissão dentro da mesma grade de participantes", () => {
@@ -40,5 +41,15 @@ describe("apresentação da transmissão na sala de chamadas", () => {
     expect(callRoomStyles).toContain('.call-room.is-minimized>:not(.call-minibar) { display:none; }');
     expect(globalStyles).toContain('.call-overlay.is-minimized{pointer-events:none;background:transparent}');
     expect(globalStyles).toContain('pointer-events:auto');
+  });
+
+  it("reflete a sessão conectada no canal e sincroniza o controle de mudo próprio", () => {
+    expect(homeSource).toContain("isInCurrentCall");
+    expect(homeSource).toContain("activeCall.data?.call.id === call.callId");
+    expect(homeSource).toContain("ActiveCallBar");
+    expect(homeSource).toContain("microphoneToggleSignal");
+    expect(homeSource).toContain("onMicrophoneStateChange={setCallMicrophoneEnabled}");
+    expect(callRoomSource).toContain("onMicrophoneStateChange?.(isMicrophoneEnabled)");
+    expect(globalStyles).toContain(".active-call-bar");
   });
 });

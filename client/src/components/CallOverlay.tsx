@@ -11,7 +11,7 @@ type ActiveCall = {
 
 type VoiceVideoSettings = Record<string, string | boolean>;
 
-export default function CallOverlay({ call, onLeave, isMinimized = false, onMinimize, onRestore, voiceVideoSettings, onVoiceVideoSettingsChange }: {
+export default function CallOverlay({ call, onLeave, isMinimized = false, onMinimize, onRestore, voiceVideoSettings, onVoiceVideoSettingsChange, microphoneToggleSignal, onMicrophoneStateChange }: {
   call: ActiveCall;
   onLeave: () => void | Promise<void>;
   isMinimized?: boolean;
@@ -19,10 +19,12 @@ export default function CallOverlay({ call, onLeave, isMinimized = false, onMini
   onRestore?: () => void;
   voiceVideoSettings?: VoiceVideoSettings;
   onVoiceVideoSettingsChange?: (settings: VoiceVideoSettings) => void | Promise<unknown>;
+  microphoneToggleSignal?: number;
+  onMicrophoneStateChange?: (enabled: boolean) => void;
 }) {
   return <div className={isMinimized ? "call-overlay is-minimized" : "call-overlay"}>
     <LiveKitRoom serverUrl={call.serverUrl} token={call.token} connect audio video={call.kind === "video"} options={livekitRoomOptions} onDisconnected={() => void onLeave()}>
-      <CallRoom kind={call.kind} onLeave={onLeave} isMinimized={isMinimized} onMinimize={onMinimize} onRestore={onRestore} voiceVideoSettings={voiceVideoSettings} onVoiceVideoSettingsChange={onVoiceVideoSettingsChange} />
+      <CallRoom kind={call.kind} onLeave={onLeave} isMinimized={isMinimized} onMinimize={onMinimize} onRestore={onRestore} voiceVideoSettings={voiceVideoSettings} onVoiceVideoSettingsChange={onVoiceVideoSettingsChange} microphoneToggleSignal={microphoneToggleSignal} onMicrophoneStateChange={onMicrophoneStateChange} />
     </LiveKitRoom>
   </div>;
 }

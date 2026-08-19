@@ -337,7 +337,9 @@ export const socialRouter = router({
       if (input.conversationId) await requireConversationAccess(db, input.conversationId, ctx.user.id);
       const scope = input.channelId ? eq(calls.channelId, input.channelId) : eq(calls.conversationId, input.conversationId!);
       const [call] = await db.select().from(calls).where(and(scope, inArray(calls.status, ["ringing", "active"]))).orderBy(desc(calls.createdAt)).limit(1);
-      return call ?? null;
+      if (!call) return null;
+      const participants = await db.select({ userId: callParticipants.userId, displayName: profiles.displayName, avatarKey: profiles.avatarKey }).from(callParticipants).leftJoin(profiles, eq(profiles.userId, callParticipants.userId)).where(and(eq(callParticipants.callId, call.id), isNull(callParticipants.leftAt))).orderBy(callParticipants.joinedAt);
+      return { call, participants, isCurrentUserInCall: participants.some(participant => participant.userId === ctx.user.id) };
     }),
     start: protectedProcedure.input(z.object({ kind: z.enum(["voice", "video"]), channelId: z.number().int().positive().nullable().optional(), conversationId: z.number().int().positive().nullable().optional() }).refine(input => Boolean(input.channelId) !== Boolean(input.conversationId), "Escolha um canal ou uma conversa direta.")).mutation(async ({ ctx, input }) => {
       requireApprovedUser(ctx.user);

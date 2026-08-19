@@ -32,6 +32,7 @@ function MessageText({ content }: { content: string | null }) {
 function LoginScreen() {
   const [inviteCode, setInviteCode] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const bootstrapStatus = trpc.platform.communities.bootstrapStatus.useQuery(undefined, { retry: false });
   const enterWithInvite = trpc.platform.communities.enterWithInvite.useMutation({
     onSuccess: () => {
       toast.success("Acesso liberado. Bem-vindo ao Círculo.");
@@ -39,7 +40,26 @@ function LoginScreen() {
     },
     onError: error => toast.error(error.message),
   });
-  return <main className="login-shell"><div className="login-orbit login-orbit-one" /><div className="login-orbit login-orbit-two" /><section className="login-card"><div className="brand-mark mx-auto mb-8"><span>C</span></div><p className="eyebrow">CÍRCULO PRIVADO</p><h1>Onde o seu grupo realmente se encontra.</h1><p className="login-copy">Um espaço fechado para conversas, salas de voz e colaboração do seu círculo.</p><form className="mt-5 space-y-3" onSubmit={event => { event.preventDefault(); if (inviteCode.trim() && displayName.trim()) enterWithInvite.mutate({ code: inviteCode.trim(), displayName: displayName.trim() }); }}><Input value={displayName} onChange={event => setDisplayName(event.target.value)} required minLength={2} maxLength={80} autoComplete="nickname" placeholder="Como quer ser chamado?" className="border-white/10 bg-white/5 text-center text-sm text-white placeholder:text-slate-500" /><Input value={inviteCode} onChange={event => setInviteCode(event.target.value)} required minLength={8} maxLength={64} autoComplete="off" placeholder="Código de convite privado" className="border-white/10 bg-white/5 text-center text-sm text-white placeholder:text-slate-500" /><p className="text-[11px] text-slate-500">Não é preciso criar conta: o convite cria uma sessão privada neste navegador.</p><Button type="submit" disabled={!inviteCode.trim() || !displayName.trim() || enterWithInvite.isPending} className="login-button w-full">{enterWithInvite.isPending && <Loader2 className="size-4 animate-spin" />}Entrar no Círculo <ChevronRight className="size-4" /></Button></form><p className="login-note"><LockKeyhole className="size-3.5" /> Acesso restrito a membros convidados.</p></section></main>;
+  const bootstrapAdmin = trpc.platform.communities.bootstrapAdmin.useMutation({
+    onSuccess: () => {
+      toast.success("Administrador inicial configurado. Bem-vindo ao Círculo.");
+      window.location.assign("/");
+    },
+    onError: error => toast.error(error.message),
+  });
+  const bootstrapAvailable = bootstrapStatus.data?.available === true;
+  const pending = enterWithInvite.isPending || bootstrapAdmin.isPending;
+  const minimumCodeLength = bootstrapAvailable ? 16 : 8;
+  const submitEntry = (event: FormEvent) => {
+    event.preventDefault();
+    if (!inviteCode.trim() || !displayName.trim()) return;
+    if (bootstrapAvailable) {
+      bootstrapAdmin.mutate({ code: inviteCode.trim(), displayName: displayName.trim() });
+      return;
+    }
+    enterWithInvite.mutate({ code: inviteCode.trim(), displayName: displayName.trim() });
+  };
+  return <main className="login-shell"><div className="login-orbit login-orbit-one" /><div className="login-orbit login-orbit-two" /><section className="login-card"><div className="brand-mark mx-auto mb-8"><span>C</span></div><p className="eyebrow">{bootstrapAvailable ? "INICIALIZAÇÃO PROTEGIDA" : "CÍRCULO PRIVADO"}</p><h1>{bootstrapAvailable ? "Configure o primeiro administrador." : "Onde o seu grupo realmente se encontra."}</h1><p className="login-copy">{bootstrapAvailable ? "Use o código secreto definido no servidor. Esta tela desaparece após a primeira administração ser configurada." : "Um espaço fechado para conversas, salas de voz e colaboração do seu círculo."}</p><form className="mt-5 space-y-3" onSubmit={submitEntry}><Input value={displayName} onChange={event => setDisplayName(event.target.value)} required minLength={2} maxLength={80} autoComplete="nickname" placeholder="Como quer ser chamado?" className="border-white/10 bg-white/5 text-center text-sm text-white placeholder:text-slate-500" /><Input value={inviteCode} onChange={event => setInviteCode(event.target.value)} required minLength={minimumCodeLength} maxLength={128} autoComplete="off" placeholder={bootstrapAvailable ? "Código inicial do administrador" : "Código de convite privado"} className="border-white/10 bg-white/5 text-center text-sm text-white placeholder:text-slate-500" /><p className="text-[11px] text-slate-500">{bootstrapAvailable ? "O código inicial só é válido enquanto não houver administrador." : "Não é preciso criar conta: o convite cria uma sessão privada neste navegador."}</p><Button type="submit" disabled={!inviteCode.trim() || !displayName.trim() || pending} className="login-button w-full">{pending && <Loader2 className="size-4 animate-spin" />}{bootstrapAvailable ? "Configurar administrador" : "Entrar no Círculo"} <ChevronRight className="size-4" /></Button></form><p className="login-note"><LockKeyhole className="size-3.5" /> {bootstrapAvailable ? "Inicialização restrita ao responsável pelo espaço." : "Acesso restrito a membros convidados."}</p></section></main>;
 }
 
 function PendingApprovalScreen({ onRedeem, onLogout, pending }: { onRedeem: (code: string) => void; onLogout: () => void; pending: boolean }) {

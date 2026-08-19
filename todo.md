@@ -52,5 +52,6 @@
 - [x] Adicionar opção configurável de aperte-para-falar, incluindo seleção da tecla de ativação e comportamento de pressionar/soltar.
 - [ ] Investigar a falha de implantação com logs vazios, reproduzir a preparação de produção e confirmar a publicação após a correção ou diagnóstico.
 - [ ] Orientar a configuração do Círculo como Web Service no Render, incluindo build, variáveis de ambiente e URLs públicas.
-- [ ] Corrigir a configuração de Root Directory do Render para o diretório que contém o package.json do Círculo.
-- [ ] Substituir o ZIP no repositório GitHub pelos arquivos fonte versionados do Círculo para permitir o build no Render.
+- [x] Corrigir a configuração de Root Directory do Render para o diretório que contém o package.json do Círculo.
+- [x] Substituir o ZIP no repositório GitHub pelos arquivos fonte versionados do Círculo para permitir o build no Render.
+- [x] Criar um fluxo único e protegido por segredo de ambiente para inicializar o primeiro administrador e permitir a geração dos primeiros convites.

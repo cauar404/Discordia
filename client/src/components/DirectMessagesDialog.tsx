@@ -4,14 +4,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
-import { CallRoom } from "@/components/CallRoom";
-import { LiveKitRoom } from "@livekit/components-react";
+import { realtimeConnectionOptions } from "@/lib/realtimeConnection";
 import { Loader2, MessageCircle, Paperclip, Pencil, Phone, Plus, Reply, Send, Smile, Trash2, UserPlus, Video, X } from "lucide-react";
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, lazy, Suspense, useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import { toast } from "sonner";
 
 type ActiveCall = { callId: number; serverUrl: string; token: string; kind: "voice" | "video" };
+const CallOverlay = lazy(() => import("@/components/CallOverlay"));
 
 function initials(name?: string | null) {
   return name?.trim().slice(0, 1).toUpperCase() || "C";
@@ -92,7 +92,7 @@ export function DirectMessagesDialog() {
 
   useEffect(() => {
     if (!open) return;
-    const socket = io({ path: "/api/realtime", withCredentials: true });
+    const socket = io(realtimeConnectionOptions);
     socketRef.current = socket;
     socket.on("connect", () => {
       if (conversationId) socket.emit("watch:direct", conversationId);
@@ -177,7 +177,7 @@ export function DirectMessagesDialog() {
         </section>
       </div>
       <Dialog open={newConversationOpen} onOpenChange={setNewConversationOpen}><DialogContent className="border-white/10 bg-[#171c27] text-white sm:max-w-sm"><DialogHeader><DialogTitle>Nova mensagem direta ou grupo</DialogTitle><DialogDescription className="text-slate-400">Selecione até 14 pessoas; duas pessoas formam uma conversa direta.</DialogDescription></DialogHeader><Input value={groupTitle} onChange={event => setGroupTitle(event.target.value)} placeholder="Nome do grupo (opcional)" className="border-white/10 bg-white/5 text-white" /><div className="max-h-64 space-y-1 overflow-y-auto">{(people.data ?? []).filter(person => person.userId !== profile.data?.user.id).map(person => <button key={person.userId} onClick={() => togglePerson(person.userId)} className={cn("flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left", selectedPeople.includes(person.userId) ? "bg-[#cbb38a]/15" : "hover:bg-white/5")}><span className="grid size-8 place-items-center rounded-lg bg-[#cbb38a]/15 text-sm text-[#dec99d]">{initials(person.displayName)}</span><span className="min-w-0 flex-1"><strong className="block truncate text-sm">{person.displayName}</strong><small className="text-xs text-slate-500">{person.customStatus || person.presence}</small></span>{selectedPeople.includes(person.userId) && <UserPlus className="size-4 text-[#dec99d]" />}</button>)}{people.isLoading && <Loader2 className="mx-auto my-6 size-4 animate-spin text-slate-500" />}</div><Button disabled={!selectedPeople.length || create.isPending} onClick={() => create.mutate({ participantUserIds: selectedPeople, title: selectedPeople.length > 1 && groupTitle.trim() ? groupTitle.trim() : null })} className="w-full bg-[#cbb38a] text-[#141820] hover:bg-[#dfca9c]">Criar conversa</Button></DialogContent></Dialog>
-      {call && <div className="call-overlay"><LiveKitRoom token={call.token} serverUrl={call.serverUrl} connect audio video={call.kind === "video"} onDisconnected={() => void closeCall()}><CallRoom kind={call.kind} onLeave={closeCall} voiceVideoSettings={profile.data?.settings?.voiceVideo as Record<string, string | boolean> | undefined} onVoiceVideoSettingsChange={settings => updateVoiceSettings.mutateAsync({ voiceVideo: settings })} /></LiveKitRoom></div>}
+      {call && <Suspense fallback={<div className="call-overlay"><div className="call-loading-overlay">Preparando a chamada…</div></div>}><CallOverlay call={call} onLeave={closeCall} voiceVideoSettings={profile.data?.settings?.voiceVideo as Record<string, string | boolean> | undefined} onVoiceVideoSettingsChange={settings => updateVoiceSettings.mutateAsync({ voiceVideo: settings })} /></Suspense>}
     </DialogContent>
   </Dialog>;
 }

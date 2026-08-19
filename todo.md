@@ -81,3 +81,15 @@
 - [ ] Capturar evidências verificáveis da tela de chamada com transmissão ativa em diferentes viewports e registrar o resultado antes de concluir os ajustes de layout.
 - [x] Diagnosticar e corrigir o carregamento infinito que impede a entrada no Círculo após a atualização publicada de chamadas.
 - [ ] Implantar a correção de timeout e recuperação do bootstrap no Render e confirmar que o login abre o Círculo sem carregamento infinito.
+- [ ] Redesenhar a interface de entrada e permanência em chamadas, com uma hierarquia visual inspirada em clientes de voz modernos e responsiva.
+- [x] Implementar volume individual por participante e volume independente para áudio de transmissão, preservando as escolhas localmente para cada pessoa.
+- [x] Aprimorar o processamento de áudio de entrada para reduzir ruído, eco e variações de volume quando suportado pelo navegador.
+- [x] Ajustar a publicação e a adaptação de vídeo/transmissão para reduzir travamentos percebidos sem prometer taxa de quadros além da capacidade de rede e dispositivo.
+- [ ] Revisar as rotas de dados e atualizações em tempo real para reduzir latência percebida em interações do aplicativo.
+- [ ] Publicar e validar uma chamada real com dois participantes, incluindo volumes individuais, áudio de transmissão, redução de ruído e fluidez adaptativa.
+- [ ] Validar e registrar evidências verificáveis da nova interface da sala de chamada em desktop e mobile, com a chamada ativa e compartilhamento de tela aberto.
+- [x] Adicionar cobertura verificável para persistência local dos volumes individuais por participante e do áudio de transmissão.
+- [ ] Validar no Render uma chamada real com dois participantes e registrar evidências dos volumes individuais por voz e por áudio de transmissão funcionando após recarregar a sala.
+- [x] Documentar e testar a conexão Socket.IO direta por WebSocket e a reconexão curta para mensagens, presença e atualizações de chamada.
+- [x] Separar o módulo LiveKit do carregamento inicial para reduzir o peso do bootstrap antes de entrar em uma chamada.
+- [ ] Revisar e documentar os fluxos de bootstrap autenticado, mensagens, presença e chamadas que ainda não receberam otimização específica de latência.

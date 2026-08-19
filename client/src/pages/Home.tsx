@@ -13,7 +13,7 @@ import { Bell, ChevronDown, ChevronRight, Hash, Headphones, Info, Loader2, LockK
 import { FormEvent, lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-type ActiveCall = { callId: number; serverUrl: string; token: string; kind: "voice" | "video" };
+type ActiveCall = { callId: number; channelId: number; serverUrl: string; token: string; kind: "voice" | "video" };
 const CallOverlay = lazy(() => import("@/components/CallOverlay"));
 const dots: Record<string, string> = { online: "bg-emerald-400", idle: "bg-amber-400", dnd: "bg-rose-400", invisible: "bg-slate-500", offline: "bg-slate-600" };
 
@@ -86,6 +86,7 @@ export default function Home() {
   const [channelName, setChannelName] = useState("");
   const [channelType, setChannelType] = useState<"text" | "voice" | "announcement">("text");
   const [call, setCall] = useState<ActiveCall | null>(null);
+  const [connectedChannelId, setConnectedChannelId] = useState<number | null>(null);
   const [callMinimized, setCallMinimized] = useState(false);
   const [callMicrophoneEnabled, setCallMicrophoneEnabled] = useState(true);
   const [microphoneToggleSignal, setMicrophoneToggleSignal] = useState(0);
@@ -115,7 +116,7 @@ export default function Home() {
   const callsConfigured = trpc.social.calls.configured.useQuery(undefined, { enabled: isAuthenticated });
   const activeCall = trpc.social.calls.active.useQuery({ channelId: channelId ?? 0 }, { enabled: Boolean(channelId) && isAuthenticated, retry: false });
   const activeCallParticipants = activeCall.data?.participants ?? [];
-  const isInCurrentCall = Boolean(call && activeCall.data?.call.id === call.callId);
+  const isInCurrentCall = Boolean(call && connectedChannelId === channelId);
 
   const createCommunity = trpc.platform.communities.create.useMutation({ onSuccess: async result => { await utils.platform.communities.list.invalidate(); setCommunityId(result.communityId); setNewCommunity(false); setCommunityName(""); toast.success("Comunidade privada criada."); }, onError: error => toast.error(error.message) });
   const createChannel = trpc.platform.communities.createChannel.useMutation({ onSuccess: async result => { await utils.platform.communities.channels.invalidate(); setChannelId(result.channelId); setNewChannel(false); setChannelName(""); toast.success("Canal criado."); }, onError: error => toast.error(error.message) });
@@ -201,9 +202,9 @@ export default function Home() {
   async function beginCall(kind: "voice" | "video") {
     if (!channelId) return;
     if (!callsConfigured.data) { toast.error("A infraestrutura de chamadas ainda não foi configurada."); return; }
-    try { const credentials = await connectCall.mutateAsync({ kind, channelId }); setCallMinimized(false); setCallMicrophoneEnabled(true); setCall({ callId: credentials.call.id, serverUrl: credentials.serverUrl, token: credentials.token, kind: credentials.call.kind }); await utils.social.calls.active.invalidate(); } catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível iniciar a chamada."); }
+    try { const credentials = await connectCall.mutateAsync({ kind, channelId }); setCallMinimized(false); setCallMicrophoneEnabled(true); setConnectedChannelId(channelId); setCall({ callId: credentials.call.id, channelId, serverUrl: credentials.serverUrl, token: credentials.token, kind: credentials.call.kind }); await utils.social.calls.active.invalidate(); } catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível iniciar a chamada."); }
   }
-  async function closeCall() { const currentCall = call; if (!currentCall || callClosingRef.current === currentCall.callId) return; callClosingRef.current = currentCall.callId; setCall(null); setCallMinimized(false); setCallMicrophoneEnabled(true); try { await leaveCall.mutateAsync({ callId: currentCall.callId }); await utils.social.calls.active.invalidate(); } catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível registrar sua saída da chamada."); } finally { callClosingRef.current = null; } }
+  async function closeCall() { const currentCall = call; if (!currentCall || callClosingRef.current === currentCall.callId) return; callClosingRef.current = currentCall.callId; setCall(null); setConnectedChannelId(null); setCallMinimized(false); setCallMicrophoneEnabled(true); try { await leaveCall.mutateAsync({ callId: currentCall.callId }); await utils.social.calls.active.invalidate(); } catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível registrar sua saída da chamada."); } finally { callClosingRef.current = null; } }
 
   if (loading) return <main className="grid min-h-screen place-items-center bg-[#0e1118]"><Loader2 className="size-6 animate-spin text-[#cbb38a]" /></main>;
   if (!isAuthenticated) return <LoginScreen />;

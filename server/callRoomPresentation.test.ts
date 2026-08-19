@@ -45,7 +45,8 @@ describe("apresentação da transmissão na sala de chamadas", () => {
 
   it("reflete a sessão conectada no canal e sincroniza o controle de mudo próprio", () => {
     expect(homeSource).toContain("isInCurrentCall");
-    expect(homeSource).toContain("activeCall.data?.call.id === call.callId");
+    expect(homeSource).toContain("connectedChannelId === channelId");
+    expect(homeSource).toContain("setConnectedChannelId(channelId)");
     expect(homeSource).toContain("ActiveCallBar");
     expect(homeSource).toContain("microphoneToggleSignal");
     expect(homeSource).toContain("onMicrophoneStateChange={setCallMicrophoneEnabled}");

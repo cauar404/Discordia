@@ -140,5 +140,8 @@
 - [x] Mostrar participantes atuais e estado de chamada em uma barra persistente no aplicativo e no modo minimizado.
 - [x] Adicionar controles imediatos de mutar/desmutar o próprio microfone, restaurar a chamada e sair, mantendo seus estados sincronizados.
 - [ ] Validar os estados de entrar, conectado, minimizado, mutado e sair em canais de voz no desktop e mobile.
+- [x] Exibir somente no canal de voz correspondente da barra lateral os avatares e nomes de usuários realmente conectados àquela chamada.
+- [x] Remover a duplicação de participantes e evitar qualquer aba exclusiva de presença na página central do canal de voz.
+- [ ] Validar que participantes entram e saem da lista lateral em tempo real, sem aparecerem em canais onde não estão conectados.
 - [x] Manter o identificador local do canal conectado para refletir “na chamada” imediatamente, antes da atualização assíncrona de presença retornar.
 - [x] Manter o identificador local do canal conectado para refletir “na chamada” imediatamente, antes da atualização assíncrona de presença retornar.

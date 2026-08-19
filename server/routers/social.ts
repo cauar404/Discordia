@@ -31,6 +31,7 @@ import { publishPlatformUpdate } from "../realtime";
 import { storageGetSignedUrl, storagePut } from "../storage";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getChannelWithAccess } from "./platform";
+import { groupVoiceCallPresence } from "../../shared/voiceCallPresence";
 
 async function requireDatabase() {
   const db = await getDb();
@@ -47,6 +48,12 @@ function requireApprovedUser(user: { role: string; accessState: string }) {
 async function requireChannelAccess(db: Awaited<ReturnType<typeof requireDatabase>>, channelId: number, userId: number) {
   const result = await getChannelWithAccess(db, channelId, userId, "connect_voice");
   return result.channel;
+}
+
+async function requireCommunityMember(db: Awaited<ReturnType<typeof requireDatabase>>, communityId: number, userId: number) {
+  const [membership] = await db.select({ id: communityMembers.id }).from(communityMembers).where(and(eq(communityMembers.communityId, communityId), eq(communityMembers.userId, userId))).limit(1);
+  if (!membership) throw new TRPCError({ code: "FORBIDDEN", message: "Você não participa desta comunidade." });
+  return membership;
 }
 
 async function requireModerationAccess(db: Awaited<ReturnType<typeof requireDatabase>>, communityId: number, userId: number, systemRole: string) {
@@ -330,6 +337,18 @@ export const socialRouter = router({
 
   calls: router({
     configured: protectedProcedure.query(() => Boolean(process.env.LIVEKIT_URL && process.env.LIVEKIT_API_KEY && process.env.LIVEKIT_API_SECRET)),
+    presenceByCommunity: protectedProcedure.input(z.object({ communityId: z.number().int().positive() })).query(async ({ ctx, input }) => {
+      requireApprovedUser(ctx.user);
+      const db = await requireDatabase();
+      await requireCommunityMember(db, input.communityId, ctx.user.id);
+      const voiceChannels = await db.select({ id: channels.id }).from(channels).where(and(eq(channels.communityId, input.communityId), eq(channels.type, "voice")));
+      if (!voiceChannels.length) return [];
+      const channelIds = voiceChannels.map(channel => channel.id);
+      const activeCalls = await db.select({ id: calls.id, channelId: calls.channelId }).from(calls).where(and(inArray(calls.channelId, channelIds), inArray(calls.status, ["ringing", "active"])));
+      if (!activeCalls.length) return [];
+      const participants = await db.select({ callId: callParticipants.callId, userId: callParticipants.userId, displayName: profiles.displayName, avatarKey: profiles.avatarKey }).from(callParticipants).leftJoin(profiles, eq(profiles.userId, callParticipants.userId)).where(and(inArray(callParticipants.callId, activeCalls.map(call => call.id)), isNull(callParticipants.leftAt))).orderBy(callParticipants.joinedAt);
+      return groupVoiceCallPresence(activeCalls, participants);
+    }),
     active: protectedProcedure.input(z.object({ channelId: z.number().int().positive().nullable().optional(), conversationId: z.number().int().positive().nullable().optional() }).refine(input => Boolean(input.channelId) !== Boolean(input.conversationId), "Escolha um canal ou uma conversa direta.")).query(async ({ ctx, input }) => {
       requireApprovedUser(ctx.user);
       const db = await requireDatabase();

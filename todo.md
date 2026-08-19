@@ -55,3 +55,7 @@
 - [x] Corrigir a configuração de Root Directory do Render para o diretório que contém o package.json do Círculo.
 - [x] Substituir o ZIP no repositório GitHub pelos arquivos fonte versionados do Círculo para permitir o build no Render.
 - [x] Criar um fluxo único e protegido por segredo de ambiente para inicializar o primeiro administrador e permitir a geração dos primeiros convites.
+- [x] Substituir o acesso por código inicial e convite obrigatório por cadastro e login locais com e-mail e senha, sem autenticação Google.
+- [x] Permitir que usuários autenticados criem as próprias comunidades privadas e entrem em outras por convite.
+- [x] Remover o fluxo de bootstrap administrativo por código da interface e do servidor.
+- [x] Diagnosticar o banco de dados indisponível no Render e documentar a configuração externa necessária para manter contas e comunidades persistentes.

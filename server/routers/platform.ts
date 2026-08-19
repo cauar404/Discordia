@@ -1,5 +1,4 @@
 import { TRPCError } from "@trpc/server";
-import { timingSafeEqual } from "node:crypto";
 import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
 import {
@@ -34,7 +33,6 @@ import { getSessionCookieOptions } from "../_core/cookies";
 import { sdk } from "../_core/sdk";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
-import { isBootstrapAdminAvailable } from "@shared/bootstrapAccess";
 
 const permissionList = z.array(z.string().min(1).max(80)).max(40);
 
@@ -52,7 +50,7 @@ const roleDefinitions = [
   { name: "Membro", color: "#A8B1C3", position: 1, permissions: ["send_messages", "connect_voice", "share_screen"] },
 ] as const;
 
-async function requireDatabase() {
+export async function requireDatabase() {
   const db = await getDb();
   if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Banco de dados indisponível." });
   return db;
@@ -64,7 +62,7 @@ function requireApprovedUser(user: { role: string; accessState: string }) {
   }
 }
 
-async function ensureProfile(db: Awaited<ReturnType<typeof requireDatabase>>, user: { id: number; name: string | null }) {
+export async function ensureProfile(db: Awaited<ReturnType<typeof requireDatabase>>, user: { id: number; name: string | null }) {
   const fallbackName = user.name?.trim().slice(0, 80) || `Usuário ${user.id}`;
   await db
     .insert(profiles)
@@ -115,37 +113,6 @@ async function ensureCommunityMembership(
   if (!membership) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Não foi possível registrar a participação na comunidade." });
   await ensureMemberRole(db, communityId, membership.id);
   return membership;
-}
-
-async function ensureCommunityRoles(db: Awaited<ReturnType<typeof requireDatabase>>, communityId: number) {
-  const existing = await db.select({ name: roles.name }).from(roles).where(eq(roles.communityId, communityId));
-  const known = new Set(existing.map(role => role.name));
-  for (const definition of roleDefinitions) {
-    if (!known.has(definition.name)) {
-      await db.insert(roles).values({ ...definition, communityId, isDefault: definition.name === "Membro", permissions: [...definition.permissions] });
-    }
-  }
-}
-
-async function assignAdministratorRole(db: Awaited<ReturnType<typeof requireDatabase>>, communityId: number, communityMemberId: number) {
-  const [adminRole] = await db
-    .select()
-    .from(roles)
-    .where(and(eq(roles.communityId, communityId), eq(roles.name, "Administrador")))
-    .limit(1);
-  if (!adminRole) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Cargo administrativo indisponível." });
-  const [assignment] = await db
-    .select()
-    .from(memberRoles)
-    .where(and(eq(memberRoles.communityMemberId, communityMemberId), eq(memberRoles.roleId, adminRole.id)))
-    .limit(1);
-  if (!assignment) await db.insert(memberRoles).values({ communityMemberId, roleId: adminRole.id });
-}
-
-function isValidBootstrapCode(expectedCode: string, submittedCode: string) {
-  const expected = Buffer.from(expectedCode);
-  const submitted = Buffer.from(submittedCode);
-  return expected.length === submitted.length && timingSafeEqual(expected, submitted);
 }
 
 async function getMembership(db: Awaited<ReturnType<typeof requireDatabase>>, communityId: number, userId: number) {
@@ -294,56 +261,6 @@ export const platformRouter = router({
   }),
 
   communities: router({
-    bootstrapStatus: publicProcedure.query(async () => {
-      const configuredCode = process.env.BOOTSTRAP_ADMIN_CODE;
-      if (!configuredCode) return { available: false };
-      const db = await requireDatabase();
-      const [administrator] = await db.select({ id: users.id }).from(users).where(eq(users.role, "admin")).limit(1);
-      return { available: isBootstrapAdminAvailable(true, Boolean(administrator)) };
-    }),
-    bootstrapAdmin: publicProcedure
-      .input(z.object({ code: z.string().min(16).max(128), displayName: z.string().trim().min(2).max(80), communityName: z.string().trim().min(2).max(100).optional() }))
-      .mutation(async ({ ctx, input }) => {
-        const address = ctx.req.ip || ctx.req.socket.remoteAddress || "unknown";
-        if (!consumeRateLimit(`bootstrap-admin:${address}`, 5, 60_000)) {
-          throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Muitas tentativas. Aguarde um momento." });
-        }
-        const configuredCode = process.env.BOOTSTRAP_ADMIN_CODE;
-        if (!configuredCode || !isValidBootstrapCode(configuredCode, input.code)) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Código inicial inválido ou indisponível." });
-        }
-        const db = await requireDatabase();
-        const [existingAdministrator] = await db.select({ id: users.id }).from(users).where(eq(users.role, "admin")).limit(1);
-        if (!isBootstrapAdminAvailable(true, Boolean(existingAdministrator))) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "A inicialização administrativa já foi concluída." });
-        }
-        const openId = `bootstrap_${crypto.randomUUID().replaceAll("-", "")}`;
-        const [created] = await db
-          .insert(users)
-          .values({ openId, name: input.displayName, loginMethod: "bootstrap", role: "admin", accessState: "approved", lastSignedIn: new Date() })
-          .$returningId();
-        const user = { id: created.id, name: input.displayName };
-        await ensureProfile(db, user);
-        let [community] = await db.select().from(communities).limit(1);
-        if (!community) {
-          const [createdCommunity] = await db
-            .insert(communities)
-            .values({ ownerUserId: user.id, name: input.communityName ?? "Círculo", description: "Comunidade privada" })
-            .$returningId();
-          [community] = await db.select().from(communities).where(eq(communities.id, createdCommunity.id)).limit(1);
-        } else {
-          await db.update(communities).set({ ownerUserId: user.id }).where(eq(communities.id, community.id));
-        }
-        if (!community) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Não foi possível preparar a comunidade inicial." });
-        await ensureCommunityRoles(db, community.id);
-        const membership = await ensureCommunityMembership(db, community.id, user.id);
-        await assignAdministratorRole(db, community.id, membership.id);
-        await db.insert(auditLogs).values({ communityId: community.id, actorUserId: user.id, action: "bootstrap.admin_created", targetType: "user", targetId: String(user.id) });
-        const sessionToken = await sdk.createSessionToken(openId, { name: input.displayName });
-        ctx.res.cookie(COOKIE_NAME, sessionToken, { ...getSessionCookieOptions(ctx.req), maxAge: ONE_YEAR_MS });
-        publishPlatformUpdate({ type: "community", communityId: community.id, userId: user.id });
-        return { communityId: community.id, displayName: input.displayName };
-      }),
     enterWithInvite: publicProcedure
       .input(z.object({ code: z.string().trim().min(8).max(64), displayName: z.string().trim().min(2).max(80) }))
       .mutation(async ({ ctx, input }) => {
@@ -385,7 +302,6 @@ export const platformRouter = router({
       .input(z.object({ name: z.string().trim().min(2).max(100), description: z.string().trim().max(1000).nullable().optional() }))
       .mutation(async ({ ctx, input }) => {
         requireApprovedUser(ctx.user);
-        if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Somente administradores podem criar comunidades." });
         const db = await requireDatabase();
         const [community] = await db.insert(communities).values({ ownerUserId: ctx.user.id, name: input.name, description: input.description ?? null }).$returningId();
         const [member] = await db.insert(communityMembers).values({ communityId: community.id, userId: ctx.user.id }).$returningId();

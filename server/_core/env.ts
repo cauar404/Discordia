@@ -1,5 +1,7 @@
 export const ENV = {
-  appId: process.env.VITE_APP_ID ?? "",
+  // Local accounts do not depend on Manus OAuth. Keep the session audience
+  // non-empty even when this application runs on an external host.
+  appId: process.env.VITE_APP_ID ?? "circulo-local",
   cookieSecret: process.env.JWT_SECRET ?? "",
   databaseUrl: process.env.DATABASE_URL ?? "",
   oAuthServerUrl: process.env.OAUTH_SERVER_URL ?? "",

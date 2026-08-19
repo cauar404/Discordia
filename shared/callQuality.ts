@@ -14,3 +14,11 @@ export const screenShareProfiles = {
 } as const;
 
 export type ScreenShareQuality = keyof typeof screenShareProfiles;
+
+export function getScreenSharePublishOptions(quality: ScreenShareQuality) {
+  return {
+    screenShareEncoding: screenShareProfiles[quality].encoding,
+    simulcast: true,
+    degradationPreference: "maintain-framerate" as const,
+  };
+}

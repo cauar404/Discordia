@@ -17,7 +17,14 @@ describe("controles de áudio da chamada", () => {
 
   it("solicita áudio de sistema somente quando a pessoa o habilita", () => {
     expect(getScreenShareAudioOptions(true)).toEqual({
-      audio: true,
+      audio: {
+        channelCount: 2,
+        sampleRate: 48_000,
+        autoGainControl: false,
+        echoCancellation: false,
+        noiseSuppression: false,
+        restrictOwnAudio: true,
+      },
       systemAudio: "include",
       suppressLocalAudioPlayback: false,
     });

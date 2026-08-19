@@ -12,6 +12,17 @@ export function remoteCallVolumeLabel(value: unknown) {
 
 export function getScreenShareAudioOptions(includeAudio: boolean) {
   return includeAudio
-    ? { audio: true, systemAudio: "include" as const, suppressLocalAudioPlayback: false }
+    ? {
+        audio: {
+          channelCount: 2,
+          sampleRate: 48_000,
+          autoGainControl: false,
+          echoCancellation: false,
+          noiseSuppression: false,
+          restrictOwnAudio: true,
+        },
+        systemAudio: "include" as const,
+        suppressLocalAudioPlayback: false,
+      }
     : { audio: false, systemAudio: "exclude" as const, suppressLocalAudioPlayback: false };
 }

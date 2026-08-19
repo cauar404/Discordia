@@ -74,3 +74,8 @@
 - [ ] Publicar e validar no Render o compartilhamento de áudio e os controles de volume em uma chamada real.
 - [ ] Capturar e registrar os logs do Render mostrando pnpm db:migrate concluído com sucesso no deploy com a migração corrigida.
 - [x] Atualizar a documentação de implantação para tornar pnpm db:migrate parte explícita do Build Command do Render.
+- [x] Melhorar o perfil de áudio da transmissão de tela e apresentar limites do navegador quando a captura de áudio não estiver disponível.
+- [ ] Reorganizar o palco de transmissão para preservar o acesso às opções e aos controles de chamada em desktop e mobile.
+- [x] Aplicar restrições de captura e codificação compatíveis com a preferência de 60 fps e comunicar limitações impostas pelo navegador e pela rede.
+- [ ] Validar visualmente a interface de chamada com compartilhamento ativo em desktop e mobile, confirmando que palco, opções e controles permanecem acessíveis.
+- [ ] Capturar evidências verificáveis da tela de chamada com transmissão ativa em diferentes viewports e registrar o resultado antes de concluir os ajustes de layout.

@@ -93,3 +93,35 @@
     width: auto;
   }
 }
+
+.call-room.has-screen-share .call-main {
+  flex: 0 1 min(52dvh, 520px);
+}
+
+.call-room.has-screen-share .call-stage,
+.call-room.has-screen-share .call-participant-area {
+  min-height: 0;
+  max-height: min(52dvh, 520px);
+}
+
+.call-room.has-screen-share .call-controls-wrap {
+  max-height: min(48dvh, 440px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: rgba(203, 179, 138, 0.48) transparent;
+}
+
+@media (max-width: 720px) {
+  .call-room.has-screen-share .call-main {
+    flex-basis: min(36dvh, 300px);
+  }
+
+  .call-room.has-screen-share .call-stage,
+  .call-room.has-screen-share .call-participant-area {
+    max-height: min(36dvh, 300px);
+  }
+
+  .call-room.has-screen-share .call-controls-wrap {
+    max-height: 52dvh;
+  }
+}

@@ -3,8 +3,8 @@ import { cn } from "@/lib/utils";
 import { RoomAudioRenderer, VideoTrack, useLocalParticipant, useParticipants, useTracks, type TrackReference } from "@livekit/components-react";
 import { Keyboard, Maximize2, Minimize2, MonitorUp, Mic, MicOff, PhoneOff, ScreenShare, Users, Video, VideoOff, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Track } from "livekit-client";
-import { screenShareProfiles, type ScreenShareQuality } from "@shared/callQuality";
+import { AudioPresets, Track } from "livekit-client";
+import { getScreenSharePublishOptions, screenShareProfiles, type ScreenShareQuality } from "@shared/callQuality";
 import { getScreenShareAudioOptions, normalizeRemoteCallVolume, remoteCallVolumeLabel } from "@shared/callAudio";
 import { isPushToTalkKeyAllowed, pushToTalkKeyLabel } from "@shared/voiceControls";
 import "./CallRoom.css";
@@ -168,9 +168,11 @@ export function CallRoom({ kind, onLeave, voiceVideoSettings, onVoiceVideoSettin
         selfBrowserSurface: "include",
         surfaceSwitching: "include",
       }, {
-        screenShareEncoding: profile.encoding,
-        simulcast: true,
-        degradationPreference: "maintain-resolution",
+        ...getScreenSharePublishOptions(nextQuality),
+        audioPreset: AudioPresets.musicHighQualityStereo,
+        dtx: false,
+        red: true,
+        forceStereo: true,
       });
       setActiveQuality(nextQuality);
     } catch (error) {
@@ -254,7 +256,7 @@ export function CallRoom({ kind, onLeave, voiceVideoSettings, onVoiceVideoSettin
 
   const stageLabel = primaryScreenShare ? `${displayName(primaryScreenShare.participant)} está compartilhando a tela` : "Aguardando compartilhamento de tela";
 
-  return <section className="call-room" aria-label="Sala de chamada">
+  return <section className={cn("call-room", primaryScreenShare && "has-screen-share")} aria-label="Sala de chamada">
     <header className="call-topbar">
       <div className="flex min-w-0 items-center gap-3"><span className="live-indicator" /><div className="min-w-0"><strong className="block truncate">{kind === "video" ? "Chamada de vídeo" : "Chamada de voz"}</strong><span className="flex items-center gap-1 text-xs text-slate-400"><Users className="size-3.5" /> {participants.length} {participants.length === 1 ? "participante" : "participantes"}</span></div></div>
       <Button variant="destructive" className="shrink-0 bg-rose-500 hover:bg-rose-400" onClick={() => void onLeave()}><PhoneOff className="size-4" />Sair</Button>
@@ -273,7 +275,7 @@ export function CallRoom({ kind, onLeave, voiceVideoSettings, onVoiceVideoSettin
 
     <footer className="call-controls-wrap">
       <div className="call-quality-row">
-        <div className="min-w-0"><span className="call-control-label">Qualidade ao compartilhar</span><p>{activeQuality ? `Preferência ativa: ${screenShareProfiles[activeQuality].label}` : "Selecione antes de compartilhar"}</p></div>
+        <div className="min-w-0"><span className="call-control-label">Qualidade ao compartilhar</span><p>{activeQuality ? `Meta ativa: ${screenShareProfiles[activeQuality].label} (prioriza fluidez)` : "Selecione antes de compartilhar"}</p></div>
         <div className="flex items-center gap-2"><label className="sr-only" htmlFor="screen-share-quality">Qualidade da tela compartilhada</label><select id="screen-share-quality" value={quality} onChange={event => setQuality(event.target.value as ScreenShareQuality)} disabled={isUpdatingShare} className="call-quality-select"><option value="720p60">720p · 60 fps</option><option value="1080p60">1080p · 60 fps</option></select>{isScreenShareEnabled && activeQuality !== quality && <Button type="button" variant="outline" onClick={() => void applyQuality()} disabled={isUpdatingShare} className="call-apply-quality">Aplicar</Button>}</div>
       </div>
       <div className="call-audio-row">
@@ -293,7 +295,7 @@ export function CallRoom({ kind, onLeave, voiceVideoSettings, onVoiceVideoSettin
         <button type="button" className={cn("call-control", !isCameraEnabled && "is-off")} onClick={() => void toggleCamera()} aria-label={isCameraEnabled ? "Desativar câmera" : "Ativar câmera"}>{isCameraEnabled ? <Video className="size-5" /> : <VideoOff className="size-5" />}<span>Câmera</span></button>
         <button type="button" className={cn("call-control", isScreenShareEnabled && "is-active")} onClick={() => void toggleScreenShare()} disabled={isUpdatingShare} aria-label={isScreenShareEnabled ? "Parar compartilhamento" : `Compartilhar tela em ${screenShareProfiles[quality].shortLabel}`}>{<ScreenShare className="size-5" />}<span>{isScreenShareEnabled ? "Parar tela" : "Compartilhar"}</span></button>
       </div>
-      <p className="call-quality-note">Ao compartilhar com áudio, marque também a opção de compartilhar áudio exibida pelo navegador. A disponibilidade depende da aba, do sistema operacional e do navegador. A qualidade da transmissão também pode ser reduzida pela rede ou pelo dispositivo.</p>
+      <p className="call-quality-note">Para transmitir som, selecione uma <strong>aba do navegador</strong> e marque a caixa de áudio exibida pelo navegador. A meta de 60 fps prioriza fluidez; dispositivo, navegador e rede ainda podem reduzir a taxa real.</p>
       {shareError && <div role="alert" className="call-share-error"><p>{shareError}</p>{displayCaptureBlocked && isEmbeddedPreview && <a className="call-preview-help" href={window.location.href} target="_blank" rel="noreferrer">Abrir o Círculo em nova guia para compartilhar a tela</a>}</div>}
     </footer>
     <RoomAudioRenderer volume={remoteAudioVolume} muted={isRemoteAudioMuted} />

@@ -121,3 +121,10 @@
 - [ ] Validar visualmente a sala de chamada ativa com palco expandido e configurações abertas, confirmando que dock e painel continuam acessíveis em desktop e mobile.
 - [ ] Ajustar o posicionamento do dock e/ou do painel de configurações caso a validação com mídia ativa revele sobreposição, perda de acesso ou competição visual com a transmissão.
 - [x] Sanitizar falhas de cadastro e login para nunca expor consultas SQL, parâmetros ou hashes de senha no navegador.
+- [x] Auditar captura, publicação, adaptação e reprodução de tela para identificar as causas de queda de qualidade, atraso e travamentos.
+- [x] Definir perfis de transmissão adaptativos com limites de resolução, taxa de quadros e bitrate orientados à estabilidade.
+- [x] Exibir indicadores de qualidade da chamada e recomendações acionáveis para rede, CPU e perfil de mídia.
+- [x] Implementar ajustes de publicação e recepção que reduzam congelamentos durante vídeos e jogos, preservando fallback estável.
+- [ ] Validar em chamada real os cenários de vídeo, streaming e jogo, documentando limites de conteúdo protegido pelo navegador.
+- [x] Instrumentar estatísticas WebRTC de jitter, perda de pacotes, RTT, bitrate e queda de quadros para diferenciar rota de mídia, Wi-Fi e adaptação de codec.
+- [ ] Avaliar a localização e a rota da infraestrutura LiveKit em relação aos participantes para reduzir latência e perda sem depender de aumento de banda local.

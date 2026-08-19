@@ -1,5 +1,5 @@
 import { AudioTrack, VideoTrack, useConnectionState, useLocalParticipant, useParticipants, useTracks, type TrackReference } from "@livekit/components-react";
-import { AudioLines, ChevronDown, Gauge, Keyboard, Maximize2, Mic, MicOff, Minimize2, MonitorUp, PhoneOff, Radio, ScreenShare, Settings2, SlidersHorizontal, Users, Video, VideoOff, Volume2, VolumeX, X } from "lucide-react";
+import { Activity, AudioLines, ChevronDown, Gauge, Keyboard, Maximize2, Mic, MicOff, Minimize2, MonitorUp, PhoneOff, Radio, ScreenShare, Settings2, SlidersHorizontal, Users, Video, VideoOff, Volume2, VolumeX, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AudioPresets, ConnectionState, Track } from "livekit-client";
 import { cn } from "@/lib/utils";
@@ -8,6 +8,7 @@ import { getScreenSharePublishOptions, screenShareProfiles, type ScreenShareQual
 import { getScreenShareAudioOptions } from "@shared/callAudio";
 import { audioMixKey, deserializeIndividualAudioMixes, INDIVIDUAL_AUDIO_MIX_STORAGE_KEY, normalizeIndividualAudioMix, serializeIndividualAudioMixes, updateIndividualAudioMix, type IndividualAudioMix, type IndividualAudioMixes } from "@shared/callMixer";
 import { getCallGridSummary, shouldShowFocusedScreenStage } from "@shared/callRoomLayout";
+import { collectCallMediaMetrics, diagnoseCallMedia, formatMediaMetric, type CallMediaDiagnostic } from "@shared/callMediaDiagnostics";
 import { isPushToTalkKeyAllowed, pushToTalkKeyLabel } from "@shared/voiceControls";
 import "./CallRoom.css";
 
@@ -25,6 +26,10 @@ function initials(name: string) {
 function isDisplayCapturePolicyError(error: unknown) {
   const message = error instanceof Error ? error.message.toLowerCase() : "";
   return message.includes("display-capture") || message.includes("permissions policy") || message.includes("permission policy");
+}
+
+function canReadRTCStats(track: unknown): track is { getRTCStatsReport: () => Promise<RTCStatsReport | undefined> } {
+  return typeof (track as { getRTCStatsReport?: unknown } | undefined)?.getRTCStatsReport === "function";
 }
 
 function readStoredMixes(): IndividualAudioMixes {
@@ -108,6 +113,7 @@ export function CallRoom({ kind, onLeave, voiceVideoSettings, onVoiceVideoSettin
   const [isChoosingPushToTalkKey, setIsChoosingPushToTalkKey] = useState(false);
   const [isPushToTalkPressed, setIsPushToTalkPressed] = useState(false);
   const [audioMixes, setAudioMixes] = useState<IndividualAudioMixes>(readStoredMixes);
+  const [mediaDiagnostic, setMediaDiagnostic] = useState<CallMediaDiagnostic | null>(null);
   const stageRef = useRef<HTMLElement | null>(null);
   const pushToTalkSequenceRef = useRef(0);
   const isEmbeddedPreview = typeof window !== "undefined" && window.top !== window.self;
@@ -119,6 +125,7 @@ export function CallRoom({ kind, onLeave, voiceVideoSettings, onVoiceVideoSettin
   const remoteAudioTracks = useMemo(() => audioTracks.filter(track => track.participant.identity !== localParticipant.identity), [audioTracks, localParticipant.identity]);
   const voiceTracks = useMemo(() => new Map(remoteAudioTracks.filter(track => track.source === Track.Source.Microphone).map(track => [track.participant.identity, track])), [remoteAudioTracks]);
   const screenShareAudioTracks = useMemo(() => remoteAudioTracks.filter(track => track.source === Track.Source.ScreenShareAudio), [remoteAudioTracks]);
+  const diagnosticScreenShare = useMemo(() => focusedScreenShare ?? screenShares.find(track => track.participant.identity === localParticipant.identity), [focusedScreenShare, localParticipant.identity, screenShares]);
 
   useEffect(() => {
     if (focusedScreenShareKey && !screenShares.some(track => trackKey(track) === focusedScreenShareKey)) setFocusedScreenShareKey(null);
@@ -127,6 +134,28 @@ export function CallRoom({ kind, onLeave, voiceVideoSettings, onVoiceVideoSettin
     try { window.localStorage.setItem(INDIVIDUAL_AUDIO_MIX_STORAGE_KEY, serializeIndividualAudioMixes(audioMixes)); } catch { /* armazenamento local pode estar indisponível */ }
   }, [audioMixes]);
   useEffect(() => { if (!isScreenShareEnabled) setActiveQuality(null); }, [isScreenShareEnabled]);
+  useEffect(() => {
+    let cancelled = false;
+    let previousBytes: number | undefined;
+    let previousSampleAt = Date.now();
+    const rtcTrack = diagnosticScreenShare?.publication?.track;
+    if (!canReadRTCStats(rtcTrack)) { setMediaDiagnostic(null); return; }
+    const sample = async () => {
+      try {
+        const report = await rtcTrack.getRTCStatsReport();
+        if (!report || cancelled) return;
+        const now = Date.now();
+        const metrics = collectCallMediaMetrics(report, now - previousSampleAt, previousBytes);
+        const rtp = Array.from(report.values()).find(stat => (stat.type === "outbound-rtp" || stat.type === "inbound-rtp") && stat.kind === "video");
+        previousBytes = typeof rtp?.bytesSent === "number" ? rtp.bytesSent : typeof rtp?.bytesReceived === "number" ? rtp.bytesReceived : previousBytes;
+        previousSampleAt = now;
+        setMediaDiagnostic(diagnoseCallMedia(metrics));
+      } catch { if (!cancelled) setMediaDiagnostic(null); }
+    };
+    void sample();
+    const interval = window.setInterval(() => { void sample(); }, 2_500);
+    return () => { cancelled = true; window.clearInterval(interval); };
+  }, [diagnosticScreenShare]);
   useEffect(() => {
     setPushToTalkEnabled(voiceVideoSettings?.pushToTalk === true);
     if (typeof voiceVideoSettings?.pushToTalkKey === "string") setPushToTalkKey(voiceVideoSettings.pushToTalkKey);
@@ -246,6 +275,7 @@ export function CallRoom({ kind, onLeave, voiceVideoSettings, onVoiceVideoSettin
           <div className="call-settings-card"><div className="call-setting-title"><Gauge className="size-4" /><div><strong>Qualidade da transmissão</strong><p>{activeQuality ? `Meta ativa: ${screenShareProfiles[activeQuality].label}` : "540p estável é recomendado para evitar travamentos."}</p></div></div><div className="call-setting-actions"><label className="sr-only" htmlFor="screen-share-quality">Qualidade da tela compartilhada</label><select id="screen-share-quality" value={quality} onChange={event => setQuality(event.target.value as ScreenShareQuality)} disabled={isUpdatingShare} className="call-quality-select"><option value="540p30">540p · estável</option><option value="720p30">720p · equilibrado</option><option value="1080p30">1080p · equilibrado</option><option value="720p60">720p · 60 fps</option><option value="1080p60">1080p · 60 fps</option></select>{isScreenShareEnabled && activeQuality !== quality && <button type="button" className="call-secondary-button" onClick={() => void applyQuality()} disabled={isUpdatingShare}>Aplicar</button>}</div></div>
           <div className="call-settings-card"><div className="call-setting-title"><AudioLines className="size-4" /><div><strong>Áudio na transmissão</strong><p>O navegador só captura quando oferece uma trilha de áudio.</p></div></div><label className="call-share-audio-toggle"><input type="checkbox" checked={includeScreenShareAudio} onChange={event => setIncludeScreenShareAudio(event.target.checked)} disabled={isScreenShareEnabled || isUpdatingShare} /><span>Incluir áudio</span></label></div>
           <div className="call-settings-card"><div className="call-setting-title"><Keyboard className="size-4" /><div><strong>Microfone</strong><p>{pushToTalkEnabled ? `Aperte ${pushToTalkKeyLabel(pushToTalkKey)} para falar.` : "Redução de ruído e eco ativada quando o navegador oferece suporte."}</p></div></div><div className="call-setting-actions"><button type="button" className={cn("call-secondary-button", pushToTalkEnabled && "is-active")} onClick={() => void togglePushToTalk()}>{pushToTalkEnabled ? "Aperte para falar" : "Ativar aperte para falar"}</button>{pushToTalkEnabled && <button type="button" className={cn("call-secondary-button", isChoosingPushToTalkKey && "is-active")} onClick={() => setIsChoosingPushToTalkKey(true)}>{isChoosingPushToTalkKey ? "Pressione uma tecla…" : `Tecla: ${pushToTalkKeyLabel(pushToTalkKey)}`}</button>}</div></div>
+          {diagnosticScreenShare && <div className="call-settings-card call-diagnostics-card"><div className="call-setting-title"><Activity className="size-4" /><div><strong>Diagnóstico da transmissão</strong><p>{mediaDiagnostic?.recommendation ?? "Aguardando métricas locais da transmissão…"}</p></div></div><div className="call-diagnostics-summary"><span className={cn("call-diagnostic-status", `is-${mediaDiagnostic?.status ?? "unavailable"}`)}>{mediaDiagnostic?.label ?? "Aguardando amostra"}</span><div className="call-diagnostic-metrics"><span>RTT <strong>{formatMediaMetric(mediaDiagnostic?.roundTripTimeMs, " ms")}</strong></span><span>Jitter <strong>{formatMediaMetric(mediaDiagnostic?.jitterMs, " ms")}</strong></span><span>Perda <strong>{formatMediaMetric(mediaDiagnostic?.packetLossPercent, "%")}</strong></span><span>Bitrate <strong>{formatMediaMetric(mediaDiagnostic?.bitrateKbps, " kbps")}</strong></span><span>FPS <strong>{formatMediaMetric(mediaDiagnostic?.framesPerSecond, "")}</strong></span></div></div></div>}
         </div>
         <div className="call-stream-mixer"><div className="call-stream-mixer-heading"><SlidersHorizontal className="size-4" /><div><strong>Mixer de transmissão</strong><p>O volume abaixo afeta apenas este dispositivo. Também está disponível ao clicar com o botão direito em uma transmissão.</p></div></div>{screenShareAudioTracks.length ? screenShareAudioTracks.map(track => <div key={trackKey(track)} className="call-stream-audio-row"><div className="call-stream-audio-title"><AudioLines className="size-4" /><span><strong>{displayName(track.participant)}</strong><small>Áudio da transmissão</small></span></div><button type="button" className={cn("call-mini-mute", mixFor(track).muted && "is-muted")} onClick={() => updateMix(track, { muted: !mixFor(track).muted })} aria-label="Alternar áudio da transmissão">{mixFor(track).muted ? <VolumeX className="size-3.5" /> : <Volume2 className="size-3.5" />}</button><input type="range" min="0" max="100" step="1" value={Math.round(mixFor(track).volume * 100)} onChange={event => updateMix(track, { volume: Number(event.target.value) / 100 })} aria-label={`Volume da transmissão de ${displayName(track.participant)}`} /><output>{Math.round(mixFor(track).volume * 100)}%</output></div>) : <p className="call-empty-mixer">Quando alguém compartilhar uma aba com áudio, o volume individual aparecerá aqui.</p>}</div>
       </div>

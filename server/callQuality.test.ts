@@ -35,4 +35,10 @@ describe("perfis de compartilhamento de tela", () => {
       degradationPreference: "maintain-framerate",
     });
   });
+
+  it("preserva resolução nos perfis de 30 fps para manter texto e interfaces legíveis", async () => {
+    const { getScreenSharePublishOptions } = await import("@shared/callQuality");
+    expect(getScreenSharePublishOptions("720p30").degradationPreference).toBe("maintain-resolution");
+    expect(getScreenSharePublishOptions("1080p30").degradationPreference).toBe("maintain-resolution");
+  });
 });

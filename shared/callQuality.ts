@@ -37,6 +37,6 @@ export function getScreenSharePublishOptions(quality: ScreenShareQuality) {
   return {
     screenShareEncoding: screenShareProfiles[quality].encoding,
     simulcast: true,
-    degradationPreference: "maintain-framerate" as const,
+    degradationPreference: (quality.endsWith("60") ? "maintain-framerate" : "maintain-resolution") as RTCDegradationPreference,
   };
 }

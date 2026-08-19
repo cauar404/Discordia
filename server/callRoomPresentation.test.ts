@@ -83,6 +83,10 @@ describe("apresentação da transmissão na sala de chamadas", () => {
     expect(globalStyles).toContain(".app-shell.call-active .voice-room .relative>.mt-7{display:none}");
   });
 
+  it("oculta a tela de pré-entrada quando a sala LiveKit já está conectada", () => {
+    expect(globalStyles).toContain(".app-shell.call-active .voice-room{display:none}");
+  });
+
   it("apresenta o estado pré-entrada como uma composição central de miniaturas", () => {
     expect(globalStyles).toContain(".app-shell:not(.call-active) .voice-room{position:relative;display:flex;align-items:center;justify-content:center");
     expect(globalStyles).toContain(".app-shell:not(.call-active) .voice-room-participants{order:-1");

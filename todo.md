@@ -156,3 +156,4 @@
 - [x] Mostrar, para quem ainda não entrou, os participantes realmente conectados ao canal de voz na área principal antes dos botões de entrada; ocultar essa lista e as ações de entrada para quem já está na chamada.
 - [x] Redesenhar o estado pré-entrada do canal de voz com miniaturas de participantes conectados, nomes resumidos, fundo azul sutil e uma ação central de entrada, inspirado na referência fornecida.
 - [x] Substituir integralmente o estado pré-entrada atual por uma composição central com miniaturas grandes de participantes, título do canal, resumo de presença e uma única ação de entrada, conforme a referência visual.
+- [x] Ocultar o painel lateral de “Sala de voz” durante a chamada conectada, mantendo-o visível somente para quem ainda não entrou.

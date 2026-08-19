@@ -71,6 +71,8 @@ describe("apresentação da transmissão na sala de chamadas", () => {
 
   it("mostra os participantes conectados dentro da tela principal do canal de voz", () => {
     expect(homeSource).toContain("voiceRoomParticipants");
+    expect(homeSource).toContain("channelPresenceParticipants?.length ? channelPresenceParticipants : activeCallParticipants");
+    expect(homeSource).toContain("refetchInterval: 5_000");
     expect(homeSource).toContain('className="voice-room-presence"');
     expect(homeSource).toContain('className="voice-room-participants"');
     expect(globalStyles).toContain(".voice-room-presence");

@@ -150,3 +150,5 @@
 - [x] Pesquisar alternativas ao LiveKit com infraestrutura no Brasil ou América do Sul e modalidade gratuita verificável, sem migrar a arquitetura atual.
 - [x] Refinar visualmente a sala de chamadas com uma grade de mídia mais compacta, cartões mais discretos, controles inferiores organizados e hierarquia inspirada no Discord, preservando todas as funções atuais.
 - [ ] Validar a nova composição da sala de chamadas em desktop e mobile, incluindo uma sessão real com múltiplos participantes e compartilhamento de tela.
+- [x] Exibir participantes realmente conectados diretamente na área principal do canal de voz, sem criar aba ou bloco de presença separado e preservando as ações de entrada por áudio e vídeo.
+- [x] Renderizar a chamada LiveKit ativa diretamente no painel principal do canal de voz, sem redirecionar para visualização ou aba separada, mantendo a barra inferior apenas no modo minimizado.

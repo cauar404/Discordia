@@ -51,6 +51,13 @@ describe("apresentação da transmissão na sala de chamadas", () => {
     expect(globalStyles).toContain('pointer-events:auto');
   });
 
+  it("monta a chamada expandida no painel central do canal e reserva o flutuante para minimização", () => {
+    expect(overlaySource).toContain('"call-overlay is-embedded"');
+    expect(globalStyles).toContain('.app-shell.call-active>.call-overlay.is-embedded');
+    expect(globalStyles).toContain('grid-column:3');
+    expect(globalStyles).toContain('.call-overlay.is-minimized{pointer-events:none;background:transparent}');
+  });
+
   it("reflete a sessão conectada no canal e sincroniza o controle de mudo próprio", () => {
     expect(homeSource).toContain("isInCurrentCall");
     expect(homeSource).toContain("connectedChannelId === channelId");
@@ -60,5 +67,12 @@ describe("apresentação da transmissão na sala de chamadas", () => {
     expect(homeSource).toContain("onMicrophoneStateChange={setCallMicrophoneEnabled}");
     expect(callRoomSource).toContain("onMicrophoneStateChange?.(isMicrophoneEnabled)");
     expect(globalStyles).toContain(".active-call-bar");
+  });
+
+  it("mostra os participantes conectados dentro da tela principal do canal de voz", () => {
+    expect(homeSource).toContain("voiceRoomParticipants");
+    expect(homeSource).toContain('className="voice-room-presence"');
+    expect(homeSource).toContain('className="voice-room-participants"');
+    expect(globalStyles).toContain(".voice-room-presence");
   });
 });

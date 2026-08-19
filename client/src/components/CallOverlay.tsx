@@ -22,7 +22,7 @@ export default function CallOverlay({ call, onLeave, isMinimized = false, onMini
   microphoneToggleSignal?: number;
   onMicrophoneStateChange?: (enabled: boolean) => void;
 }) {
-  return <div className={isMinimized ? "call-overlay is-minimized" : "call-overlay"}>
+  return <div className={isMinimized ? "call-overlay is-minimized" : "call-overlay is-embedded"}>
     <LiveKitRoom serverUrl={call.serverUrl} token={call.token} connect audio video={call.kind === "video"} options={livekitRoomOptions} onDisconnected={() => void onLeave()}>
       <CallRoom kind={call.kind} onLeave={onLeave} isMinimized={isMinimized} onMinimize={onMinimize} onRestore={onRestore} voiceVideoSettings={voiceVideoSettings} onVoiceVideoSettingsChange={onVoiceVideoSettingsChange} microphoneToggleSignal={microphoneToggleSignal} onMicrophoneStateChange={onMicrophoneStateChange} />
     </LiveKitRoom>

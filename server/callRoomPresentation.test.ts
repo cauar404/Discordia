@@ -111,12 +111,11 @@ describe("apresentação da transmissão na sala de chamadas", () => {
     expect(callRoomStyles).toContain(".call-stage-close { position:absolute; z-index:2; top:.6rem; left:.6rem; }");
   });
 
-  it("mantém a configuração no fluxo da sala e impede que o palco aberto a cubra", () => {
-    expect(callRoomSource).toContain('const [isSettingsOpen, setIsSettingsOpen] = useState(false)');
-    expect(callRoomSource).toContain('isSettingsOpen && "settings-open"');
-    expect(callRoomSource).toContain('onToggle={event => setIsSettingsOpen(event.currentTarget.open)}');
-    expect(callRoomStyles).toContain(".call-room.call-room-polished.has-focused-share.settings-open .call-stage-modern { position:relative");
-    expect(callRoomStyles).toContain(".call-room.call-room-polished.has-focused-share.settings-open .call-settings-panel { position:relative; z-index:22");
-    expect(callRoomStyles).not.toContain(".call-room.has-focused-share .call-settings-panel { position:absolute; z-index:31");
+  it("substitui a grade pelo palco escolhido sem duplicar a transmissão expandida", () => {
+    expect(callRoomSource).toContain("const isStageExpanded = Boolean(focusedScreenShare && shouldShowFocusedScreenStage(focusedScreenShareKey))");
+    expect(callRoomSource).toContain('isStageExpanded && "is-stage-expanded"');
+    expect(callRoomSource).toContain('{isStageExpanded ? <section ref={stageRef} className="call-stage call-stage-modern"');
+    expect(callRoomStyles).toContain(".call-participant-area-modern.is-stage-expanded { padding:0; background:#090a0c; }");
+    expect(callRoomStyles).toContain(".call-participant-area-modern.is-stage-expanded .call-stage-modern { position:relative; inset:auto; width:100%; height:100%");
   });
 });

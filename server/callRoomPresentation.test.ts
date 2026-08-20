@@ -126,4 +126,9 @@ describe("apresentação da transmissão na sala de chamadas", () => {
     expect(globalStyles).toContain(".context-panel { display:flex; height:100%; min-height:0; flex-direction:column; overflow:hidden;");
     expect(globalStyles).toContain(".app-shell.call-active>.call-overlay.is-embedded{position:relative;z-index:20;inset:auto;grid-column:3;grid-row:1;width:100%;height:100%;min-height:0;overflow:hidden}");
   });
+
+  it("remove o painel lateral de membros da grade enquanto a chamada ocupa o painel central", () => {
+    expect(globalStyles).toContain(".app-shell.call-active{grid-template-columns:72px 252px minmax(0,1fr)}");
+    expect(globalStyles).toContain(".app-shell.call-active>.context-panel{display:none}");
+  });
 });

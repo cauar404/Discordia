@@ -171,3 +171,7 @@
 - [x] Corrigir a altura global da casca em chamada para que todas as colunas ocupem a viewport real, sem faixa inferior residual.
 - [x] Remover a altura limitada da camada integrada de chamada para que ela herde integralmente a altura da grade normal.
 - [x] Medir a cadeia de contêineres do estado conectado e corrigir somente o elemento que reduz a grade da chamada.
+- [x] Permitir que o criador de uma comunidade exclua a própria comunidade com confirmação explícita e autorização no servidor.
+- [x] Permitir que o criador remova membros da própria comunidade, preservando a proibição de remover a si mesmo pelo fluxo de membros.
+- [x] Substituir as opções temporizadas de convite por geração de um link permanente em um clique.
+- [x] Cobrir por testes as autorizações do criador, a remoção de membros, a exclusão da comunidade e o convite permanente.

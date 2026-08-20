@@ -383,6 +383,30 @@ export const platformRouter = router({
         const [invite] = await db.insert(communityInvites).values({ communityId: input.communityId, createdByUserId: ctx.user.id, code, maxUses: input.maxUses ?? null, expiresAt: input.expiresAt ?? null }).$returningId();
         return { inviteId: invite.id, code };
       }),
+    createPermanentInvite: protectedProcedure
+      .input(z.object({ communityId: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        requireApprovedUser(ctx.user);
+        if (!consumeRateLimit(`invite:${ctx.user.id}`, 10, 60_000)) {
+          throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Aguarde antes de gerar mais convites." });
+        }
+        const db = await requireDatabase();
+        await canManageCommunity(db, input.communityId, ctx.user.id, ctx.user.role, "manage_members");
+        const code = crypto.randomUUID().replaceAll("-", "");
+        const [invite] = await db
+          .insert(communityInvites)
+          .values({ communityId: input.communityId, createdByUserId: ctx.user.id, code, maxUses: null, expiresAt: null })
+          .$returningId();
+        await db.insert(auditLogs).values({
+          communityId: input.communityId,
+          actorUserId: ctx.user.id,
+          action: "invite.created",
+          targetType: "invite",
+          targetId: String(invite.id),
+          details: { permanent: true },
+        });
+        return { inviteId: invite.id, code };
+      }),
     redeemInvite: protectedProcedure.input(z.object({ code: z.string().trim().min(8).max(64) })).mutation(async ({ ctx, input }) => {
       if (!consumeRateLimit(`redeem:${ctx.user.id}`, 8, 60_000)) throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Muitas tentativas de convite. Aguarde um momento." });
       const db = await requireDatabase();
@@ -471,6 +495,56 @@ export const platformRouter = router({
       await db.insert(auditLogs).values({ communityId: invite.communityId, actorUserId: ctx.user.id, action: "invite.revoked", targetType: "invite", targetId: String(invite.id) });
       return { success: true };
     }),
+    removeMember: protectedProcedure
+      .input(z.object({ communityId: z.number().int().positive(), userId: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        requireApprovedUser(ctx.user);
+        if (input.userId === ctx.user.id) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Você não pode remover a si mesmo desta comunidade." });
+        }
+        const db = await requireDatabase();
+        const [community] = await db.select().from(communities).where(eq(communities.id, input.communityId)).limit(1);
+        if (!community) throw new TRPCError({ code: "NOT_FOUND", message: "Comunidade não encontrada." });
+        const isOwner = community.ownerUserId === ctx.user.id || ctx.user.role === "admin";
+        if (!isOwner) await canManageCommunity(db, input.communityId, ctx.user.id, ctx.user.role, "manage_members");
+        const [member] = await db
+          .select({ id: communityMembers.id })
+          .from(communityMembers)
+          .where(and(eq(communityMembers.communityId, input.communityId), eq(communityMembers.userId, input.userId)))
+          .limit(1);
+        if (!member) throw new TRPCError({ code: "NOT_FOUND", message: "Membro não encontrado nesta comunidade." });
+        await db.delete(communityMembers).where(eq(communityMembers.id, member.id));
+        await db.insert(auditLogs).values({
+          communityId: input.communityId,
+          actorUserId: ctx.user.id,
+          action: "member.removed",
+          targetType: "user",
+          targetId: String(input.userId),
+        });
+        publishPlatformUpdate({ type: "community", communityId: input.communityId, userId: input.userId });
+        return { success: true };
+      }),
+    deleteCommunity: protectedProcedure
+      .input(z.object({ communityId: z.number().int().positive() }))
+      .mutation(async ({ ctx, input }) => {
+        requireApprovedUser(ctx.user);
+        const db = await requireDatabase();
+        const [community] = await db.select().from(communities).where(eq(communities.id, input.communityId)).limit(1);
+        if (!community) throw new TRPCError({ code: "NOT_FOUND", message: "Comunidade não encontrada." });
+        if (community.ownerUserId !== ctx.user.id && ctx.user.role !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Apenas o criador pode excluir esta comunidade." });
+        }
+        await db.insert(auditLogs).values({
+          communityId: input.communityId,
+          actorUserId: ctx.user.id,
+          action: "community.deleted",
+          targetType: "community",
+          targetId: String(input.communityId),
+        });
+        await db.delete(communities).where(eq(communities.id, input.communityId));
+        publishPlatformUpdate({ type: "community", communityId: input.communityId });
+        return { success: true };
+      }),
     auditLogs: protectedProcedure.input(z.object({ communityId: z.number().int().positive() })).query(async ({ ctx, input }) => {
       requireApprovedUser(ctx.user);
       const db = await requireDatabase();

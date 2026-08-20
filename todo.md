@@ -162,3 +162,4 @@
 - [x] Validar por testes a configuração de mídia de alta qualidade e comunicar limites de conteúdo protegido, navegador e rede.
 - [x] Corrigir a atualização contínua das métricas reais de bitrate da transmissão, sem exibir zero como dado quando a amostra estiver indisponível.
 - [x] Reposicionar os controles da transmissão expandida para impedir a sobreposição entre minimizar e sair.
+- [x] Reposicionar e refinar o painel de configurações da chamada para permanecer acessível sem cobrir o palco de transmissão aberto.

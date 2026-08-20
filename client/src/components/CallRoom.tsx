@@ -108,6 +108,7 @@ export function CallRoom({ kind, onLeave, isMinimized = false, onMinimize, onRes
   const [displayCaptureBlocked, setDisplayCaptureBlocked] = useState(false);
   const [isStageFullscreen, setIsStageFullscreen] = useState(false);
   const [focusedScreenShareKey, setFocusedScreenShareKey] = useState<string | null>(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [pushToTalkEnabled, setPushToTalkEnabled] = useState(voiceVideoSettings?.pushToTalk === true);
   const [pushToTalkKey, setPushToTalkKey] = useState(typeof voiceVideoSettings?.pushToTalkKey === "string" ? voiceVideoSettings.pushToTalkKey : "Space");
   const [isChoosingPushToTalkKey, setIsChoosingPushToTalkKey] = useState(false);
@@ -281,7 +282,7 @@ export function CallRoom({ kind, onLeave, isMinimized = false, onMinimize, onRes
   const stageLabel = focusedScreenShare ? `${displayName(focusedScreenShare.participant)} está compartilhando a tela` : "Palco da chamada";
   const gridSummary = getCallGridSummary(participants.length, screenShares.length);
   const isReconnecting = connectionState === ConnectionState.Reconnecting;
-  return <section className={cn("call-room", "call-room-polished", screenShares.length > 0 && "has-screen-share", focusedScreenShare && "has-focused-share", isMinimized && "is-minimized")} aria-label="Sala de chamada">
+  return <section className={cn("call-room", "call-room-polished", screenShares.length > 0 && "has-screen-share", focusedScreenShare && "has-focused-share", isSettingsOpen && "settings-open", isMinimized && "is-minimized")} aria-label="Sala de chamada">
     <section className="call-minibar" aria-label="Chamada em andamento">
       <button type="button" className="call-minibar-main" onClick={onRestore} aria-label="Restaurar chamada"><span className="call-minibar-pulse" /><span className="call-minibar-copy"><strong>{kind === "video" ? "Chamada de vídeo" : "Chamada de voz"}</strong><small>{participants.length} participante{participants.length === 1 ? "" : "s"}{isScreenShareEnabled ? " · transmitindo tela" : " · em andamento"}</small></span><Maximize2 className="size-4" /></button>
       <button type="button" className={cn("call-minibar-action", !isMicrophoneEnabled && "is-off")} onClick={() => void toggleMicrophone()} disabled={pushToTalkEnabled} aria-label={isMicrophoneEnabled ? "Silenciar microfone" : "Ativar microfone"}>{isMicrophoneEnabled ? <Mic className="size-4" /> : <MicOff className="size-4" />}</button>
@@ -309,8 +310,8 @@ export function CallRoom({ kind, onLeave, isMinimized = false, onMinimize, onRes
       <button type="button" className={cn("call-dock-control", isScreenShareEnabled && "is-active")} onClick={() => void toggleScreenShare()} disabled={isUpdatingShare} aria-label={isScreenShareEnabled ? "Parar compartilhamento" : "Compartilhar tela"}><ScreenShare className="size-5" /><span>{isScreenShareEnabled ? "Parar tela" : "Compartilhar"}</span></button>
       <button type="button" className="call-dock-end" onClick={() => void onLeave()} aria-label="Sair da chamada"><PhoneOff className="size-5" /></button>
     </section>
-    <details className="call-settings-panel">
-      <summary><span><Settings2 className="size-4" /> Configurações da chamada</span><ChevronDown className="size-4" /></summary>
+    <details className="call-settings-panel" onToggle={event => setIsSettingsOpen(event.currentTarget.open)}>
+      <summary><span><Settings2 className="size-4" /> Configurações da chamada{focusedScreenShare && <small className="call-settings-context">Transmissão</small>}</span><ChevronDown className="size-4" /></summary>
       <div className="call-settings-content">
         <div className="call-settings-grid">
           <div className="call-settings-card"><div className="call-setting-title"><Gauge className="size-4" /><div><strong>Qualidade da transmissão</strong><p>{activeQuality ? `Meta ativa: ${screenShareProfiles[activeQuality].label}` : "720p a 60 fps é o padrão para vídeo e jogos; use 1080p a 60 fps em rede estável."}</p></div></div><div className="call-setting-actions"><label className="sr-only" htmlFor="screen-share-quality">Qualidade da tela compartilhada</label><select id="screen-share-quality" value={quality} onChange={event => setQuality(event.target.value as ScreenShareQuality)} disabled={isUpdatingShare} className="call-quality-select"><option value="540p30">540p · estável</option><option value="720p30">720p · equilibrado</option><option value="1080p30">1080p · equilibrado</option><option value="720p60">720p · 60 fps</option><option value="1080p60">1080p · 60 fps</option></select>{isScreenShareEnabled && activeQuality !== quality && <button type="button" className="call-secondary-button" onClick={() => void applyQuality()} disabled={isUpdatingShare}>Aplicar</button>}</div></div>

@@ -110,4 +110,13 @@ describe("apresentação da transmissão na sala de chamadas", () => {
     expect(callRoomStyles).toContain(".call-stage-actions { position:absolute; top:.6rem; right:.6rem; z-index:2");
     expect(callRoomStyles).toContain(".call-stage-close { position:absolute; z-index:2; top:.6rem; left:.6rem; }");
   });
+
+  it("transforma configurações em inspetor lateral e reserva espaço para a transmissão expandida", () => {
+    expect(callRoomSource).toContain('const [isSettingsOpen, setIsSettingsOpen] = useState(false)');
+    expect(callRoomSource).toContain('isSettingsOpen && "settings-open"');
+    expect(callRoomSource).toContain('onToggle={event => setIsSettingsOpen(event.currentTarget.open)}');
+    expect(callRoomStyles).toContain(".call-room.has-focused-share .call-settings-panel { position:absolute; z-index:31");
+    expect(callRoomStyles).toContain(".call-room.call-room-polished.has-focused-share.settings-open .call-stage-modern { right:calc(min(340px, 100% - 1.3rem)");
+    expect(callRoomStyles).toContain("@media (max-width:900px) { .call-room.has-focused-share .call-settings-panel { position:relative");
+  });
 });

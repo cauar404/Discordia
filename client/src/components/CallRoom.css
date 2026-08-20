@@ -16,7 +16,7 @@
 .call-leave-button { margin-left:.35rem; background:#da373c; color:#fff; }.call-leave-button:hover { background:#a12828; }.call-secondary-button:hover,.call-secondary-button.is-active { background:#5865f2; color:#fff; }.call-leave-button:active,.call-secondary-button:active { transform:scale(.97); }
 
 /* A chamada ocupa uma única coluna: a segunda coluna herdada criava o grande vazio visto na lateral. */
-.call-main-modern { min-height:0; flex:1; grid-template-columns:minmax(0,1fr); padding:clamp(.55rem,1.1vw,.9rem) clamp(.55rem,1.25vw,1rem) .35rem; }
+.call-main-modern { min-height:0; flex:1; grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,1fr); padding:clamp(.55rem,1.1vw,.9rem) clamp(.55rem,1.25vw,1rem) .35rem; }
 .call-participant-area-modern { display:flex; min-height:0; height:100%; flex-direction:column; overflow:hidden; border:1px solid rgba(255,255,255,.055); border-radius:10px; background:linear-gradient(145deg,#1e1f22,#1a1b1e); padding:.7rem; box-shadow:inset 0 1px rgba(255,255,255,.02); }
 .call-participant-area-modern.is-stage-expanded { padding:0; background:#090a0c; }
 .call-section-heading { display:flex; align-items:center; gap:.42rem; margin:0 0 .55rem; padding:0 .08rem; color:#949ba4; font-size:9px; font-weight:800; letter-spacing:.1em; }

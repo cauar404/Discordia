@@ -26,6 +26,7 @@ describe("apresentação da transmissão na sala de chamadas", () => {
 
   it("usa uma única coluna útil e cartões proporcionais para evitar vazios laterais", () => {
     expect(callRoomStyles).toContain(".call-main-modern { min-height:0; flex:1; grid-template-columns:minmax(0,1fr)");
+    expect(callRoomStyles).toContain("grid-template-rows:minmax(0,1fr)");
     expect(callRoomStyles).toContain(".call-participant-card,.call-share-tile { min-width:0; min-height:0; align-self:center; aspect-ratio:16 / 9");
     expect(callRoomStyles).toContain(".call-participant-grid.is-solo { grid-template-columns:minmax(260px,520px); justify-content:center;");
   });

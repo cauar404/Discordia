@@ -167,3 +167,4 @@
 - [x] Corrigir a expansão da transmissão para exibir somente o palco selecionado, sem duplicar a tela na grade de participantes.
 - [x] Conter a rolagem vertical da chamada nos painéis internos para impedir área vazia e desestruturação da interface ao rolar a página.
 - [x] Corrigir o painel de membros durante chamadas para manter sua coluna alinhada à janela e a rolagem restrita à própria lista.
+- [x] Remover a faixa preta residual abaixo da sala de chamada, preservando o espaço útil do palco e dos controles.

@@ -132,4 +132,9 @@ describe("apresentação da transmissão na sala de chamadas", () => {
     expect(globalStyles).toContain(".app-shell.call-active{grid-template-columns:72px 252px minmax(0,1fr)}");
     expect(globalStyles).toContain(".app-shell.call-active>.context-panel{display:none}");
   });
+
+  it("fixa a casca da chamada à viewport disponível, inclusive com a barra de compartilhamento do navegador", () => {
+    expect(globalStyles).toContain("body:has(.app-shell.call-active){overflow:hidden}");
+    expect(globalStyles).toContain(".app-shell.call-active{position:fixed;inset:0;width:100%;height:auto;min-height:0}");
+  });
 });

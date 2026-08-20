@@ -242,6 +242,7 @@
 
 /* A chamada expandida ocupa o mesmo painel central do canal; somente a chamada minimizada fica flutuante. */
 .app-shell.call-active{grid-template-columns:72px 252px minmax(0,1fr)}.app-shell.call-active>.context-panel{display:none}.app-shell.call-active>.call-overlay.is-embedded{position:relative;z-index:20;inset:auto;grid-column:3;grid-row:1;width:100%;height:100%;min-height:0;overflow:hidden}.app-shell.call-active>.call-overlay.is-embedded .call-room{min-height:100%;height:100%}@media(max-width:720px){.app-shell.call-active>.call-overlay.is-embedded{grid-column:1}}
+body:has(.app-shell.call-active){overflow:hidden}.app-shell.call-active{position:fixed;inset:0;width:100%;height:auto;min-height:0}
 
 /* Quem já está conectado não recebe ações redundantes de entrar na própria chamada. */
 .app-shell.call-active .voice-room .relative>.mt-7{display:none}

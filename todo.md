@@ -163,3 +163,4 @@
 - [x] Corrigir a atualização contínua das métricas reais de bitrate da transmissão, sem exibir zero como dado quando a amostra estiver indisponível.
 - [x] Reposicionar os controles da transmissão expandida para impedir a sobreposição entre minimizar e sair.
 - [x] Reposicionar e refinar o painel de configurações da chamada para permanecer acessível sem cobrir o palco de transmissão aberto.
+- [x] Restaurar o fluxo visual anterior das configurações da chamada, removendo o inspetor lateral e corrigindo somente a sobreposição com acabamento discreto.

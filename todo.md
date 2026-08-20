@@ -170,3 +170,4 @@
 - [x] Remover a faixa preta residual abaixo da sala de chamada, preservando o espaço útil do palco e dos controles.
 - [x] Corrigir a altura global da casca em chamada para que todas as colunas ocupem a viewport real, sem faixa inferior residual.
 - [x] Remover a altura limitada da camada integrada de chamada para que ela herde integralmente a altura da grade normal.
+- [x] Medir a cadeia de contêineres do estado conectado e corrigir somente o elemento que reduz a grade da chamada.

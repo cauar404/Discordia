@@ -160,6 +160,22 @@ export default function Home() {
   useEffect(() => { if (channelId) realtimeRef.current?.emit("watch:channel", channelId); setSomeoneTyping(false); }, [channelId]);
   useEffect(() => { if (call) realtimeRef.current?.emit("watch:call", call.callId); }, [call]);
   useEffect(() => {
+    if (!call) return;
+    const syncCallViewportHeight = () => {
+      const visualHeight = window.visualViewport?.height ?? window.innerHeight;
+      document.documentElement.style.setProperty("--circulo-call-viewport-height", `${Math.round(visualHeight)}px`);
+    };
+    const visualViewport = window.visualViewport;
+    syncCallViewportHeight();
+    window.addEventListener("resize", syncCallViewportHeight);
+    visualViewport?.addEventListener("resize", syncCallViewportHeight);
+    return () => {
+      window.removeEventListener("resize", syncCallViewportHeight);
+      visualViewport?.removeEventListener("resize", syncCallViewportHeight);
+      document.documentElement.style.removeProperty("--circulo-call-viewport-height");
+    };
+  }, [call]);
+  useEffect(() => {
     if (!channelId) return;
     const composer = document.querySelector<HTMLTextAreaElement>("textarea");
     const announceTyping = () => realtimeRef.current?.emit("typing:channel", channelId);

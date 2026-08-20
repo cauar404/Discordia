@@ -137,4 +137,11 @@ describe("apresentação da transmissão na sala de chamadas", () => {
     expect(globalStyles).toContain("body:has(.app-shell.call-active){overflow:hidden}");
     expect(globalStyles).toContain(".app-shell.call-active{position:fixed;inset:0;width:100%;height:100dvh;min-height:100dvh}");
   });
+
+  it("mede a viewport conectada e impede uma linha implícita de reduzir todas as colunas", () => {
+    expect(homeSource).toContain("syncCallViewportHeight");
+    expect(homeSource).toContain("window.visualViewport?.height ?? window.innerHeight");
+    expect(homeSource).toContain("--circulo-call-viewport-height");
+    expect(globalStyles).toContain(".app-shell.call-active{grid-template-rows:minmax(0,1fr);height:var(--circulo-call-viewport-height,100dvh)");
+  });
 });

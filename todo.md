@@ -165,3 +165,4 @@
 - [x] Reposicionar e refinar o painel de configurações da chamada para permanecer acessível sem cobrir o palco de transmissão aberto.
 - [x] Restaurar o fluxo visual anterior das configurações da chamada, removendo o inspetor lateral e corrigindo somente a sobreposição com acabamento discreto.
 - [x] Corrigir a expansão da transmissão para exibir somente o palco selecionado, sem duplicar a tela na grade de participantes.
+- [x] Conter a rolagem vertical da chamada nos painéis internos para impedir área vazia e desestruturação da interface ao rolar a página.

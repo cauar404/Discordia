@@ -118,4 +118,12 @@ describe("apresentação da transmissão na sala de chamadas", () => {
     expect(callRoomStyles).toContain(".call-participant-area-modern.is-stage-expanded { padding:0; background:#090a0c; }");
     expect(callRoomStyles).toContain(".call-participant-area-modern.is-stage-expanded .call-stage-modern { position:relative; inset:auto; width:100%; height:100%");
   });
+
+  it("mantém a interface da chamada contida na janela e deixa a rolagem para os painéis internos", () => {
+    expect(globalStyles).toContain("#root:has(.app-shell){height:100dvh;overflow:hidden}");
+    expect(globalStyles).toContain(".app-shell { display:grid; grid-template-columns:72px 252px minmax(0,1fr) 272px; height:100dvh; min-height:0; overflow:hidden; overscroll-behavior:none;");
+    expect(globalStyles).toContain(".chat-panel { position:relative; display:flex; min-width:0; height:100%; min-height:0; flex-direction:column; overflow:hidden;");
+    expect(globalStyles).toContain(".context-panel { display:flex; height:100%; min-height:0; flex-direction:column; overflow:hidden;");
+    expect(globalStyles).toContain(".app-shell.call-active>.call-overlay.is-embedded{position:relative;z-index:20;inset:auto;grid-column:3;grid-row:1;width:100%;height:100%;min-height:0;overflow:hidden}");
+  });
 });

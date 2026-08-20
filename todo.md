@@ -169,3 +169,4 @@
 - [x] Corrigir o painel de membros durante chamadas para manter sua coluna alinhada à janela e a rolagem restrita à própria lista.
 - [x] Remover a faixa preta residual abaixo da sala de chamada, preservando o espaço útil do palco e dos controles.
 - [x] Corrigir a altura global da casca em chamada para que todas as colunas ocupem a viewport real, sem faixa inferior residual.
+- [x] Remover a altura limitada da camada integrada de chamada para que ela herde integralmente a altura da grade normal.

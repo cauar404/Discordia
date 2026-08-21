@@ -31,8 +31,9 @@ describe("perfis de compartilhamento de tela", () => {
     const { getScreenSharePublishOptions } = await import("@shared/callQuality");
     const options = getScreenSharePublishOptions("1080p60");
     expect(options.screenShareEncoding).toEqual({ maxBitrate: 10_000_000, maxFramerate: 60 });
-    expect(options.screenShareSimulcastLayers).toHaveLength(2);
+    expect(options.screenShareSimulcastLayers).toHaveLength(3);
     expect(options.screenShareSimulcastLayers[1]).toMatchObject({ width: 1280, height: 720, encoding: { maxBitrate: 5_500_000, maxFramerate: 60 } });
+    expect(options.screenShareSimulcastLayers[2]).toMatchObject({ width: 1920, height: 1080, encoding: { maxBitrate: 10_000_000, maxFramerate: 60 } });
     expect(options.simulcast).toBe(true);
     expect(options.degradationPreference).toBe("maintain-framerate");
   });
@@ -41,5 +42,12 @@ describe("perfis de compartilhamento de tela", () => {
     const { getScreenSharePublishOptions } = await import("@shared/callQuality");
     expect(getScreenSharePublishOptions("720p30").degradationPreference).toBe("maintain-resolution");
     expect(getScreenSharePublishOptions("1080p30").degradationPreference).toBe("maintain-resolution");
+  });
+
+  it("mantém uma camada superior correspondente à resolução capturada em todos os perfis", () => {
+    expect(screenShareProfiles["540p30"].simulcastLayers.at(-1)).toMatchObject({ width: 960, height: 540 });
+    expect(screenShareProfiles["720p30"].simulcastLayers.at(-1)).toMatchObject({ width: 1280, height: 720 });
+    expect(screenShareProfiles["1080p30"].simulcastLayers.at(-1)).toMatchObject({ width: 1920, height: 1080 });
+    expect(screenShareProfiles["720p60"].simulcastLayers.at(-1)).toMatchObject({ width: 1280, height: 720 });
   });
 });

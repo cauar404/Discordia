@@ -62,7 +62,8 @@
 - [x] Criar e conectar um banco MySQL persistente compatível ao serviço do Render, aplicar as migrações e validar o cadastro local publicado.
 - [x] Configurar um banco MySQL compatível em plano gratuito para a publicação temporária, sem serviço de banco pago no Render.
 - [x] Corrigir a conexão TLS entre o Render e o TiDB após o erro de banco indisponível na publicação.
-- [ ] Remover a inicialização OAuth residual e expor apenas diagnóstico seguro de disponibilidade de banco no ambiente Render.
+- [x] Remover a inicialização OAuth residual e expor apenas diagnóstico seguro de disponibilidade de banco no ambiente Render.
+- [ ] Validar a rota pública de saúde no Render com banco disponível e indisponível, confirmando que a resposta não expõe detalhes de conexão.
 - [ ] Executar as migrações Drizzle no TiDB pelo processo de build do Render para criar as tabelas da publicação.
 - [x] Corrigir a migração Drizzle que remove uma chave estrangeira inexistente no TiDB vazio e bloqueia a publicação.
 - [x] Disparar novo deploy no Render com a migração 0002 corrigida e registrar o resultado da publicação.
@@ -81,20 +82,20 @@
 - [ ] Capturar evidências verificáveis da tela de chamada com transmissão ativa em diferentes viewports e registrar o resultado antes de concluir os ajustes de layout.
 - [x] Diagnosticar e corrigir o carregamento infinito que impede a entrada no Círculo após a atualização publicada de chamadas.
 - [ ] Implantar a correção de timeout e recuperação do bootstrap no Render e confirmar que o login abre o Círculo sem carregamento infinito.
-- [ ] Redesenhar a interface de entrada e permanência em chamadas, com uma hierarquia visual inspirada em clientes de voz modernos e responsiva.
+- [x] Redesenhar a interface de entrada e permanência em chamadas, com uma hierarquia visual inspirada em clientes de voz modernos e responsiva.
 - [x] Implementar volume individual por participante e volume independente para áudio de transmissão, preservando as escolhas localmente para cada pessoa.
 - [x] Aprimorar o processamento de áudio de entrada para reduzir ruído, eco e variações de volume quando suportado pelo navegador.
 - [x] Ajustar a publicação e a adaptação de vídeo/transmissão para reduzir travamentos percebidos sem prometer taxa de quadros além da capacidade de rede e dispositivo.
-- [ ] Revisar as rotas de dados e atualizações em tempo real para reduzir latência percebida em interações do aplicativo.
+- [x] Revisar as rotas de dados e atualizações em tempo real para reduzir latência percebida em interações do aplicativo.
 - [ ] Publicar e validar uma chamada real com dois participantes, incluindo volumes individuais, áudio de transmissão, redução de ruído e fluidez adaptativa.
 - [ ] Validar e registrar evidências verificáveis da nova interface da sala de chamada em desktop e mobile, com a chamada ativa e compartilhamento de tela aberto.
 - [x] Adicionar cobertura verificável para persistência local dos volumes individuais por participante e do áudio de transmissão.
 - [ ] Validar no Render uma chamada real com dois participantes e registrar evidências dos volumes individuais por voz e por áudio de transmissão funcionando após recarregar a sala.
 - [x] Documentar e testar a conexão Socket.IO direta por WebSocket e a reconexão curta para mensagens, presença e atualizações de chamada.
 - [x] Separar o módulo LiveKit do carregamento inicial para reduzir o peso do bootstrap antes de entrar em uma chamada.
-- [ ] Revisar e documentar os fluxos de bootstrap autenticado, mensagens, presença e chamadas que ainda não receberam otimização específica de latência.
-- [ ] Diagnosticar os indicadores de qualidade da conexão LiveKit e identificar se os travamentos decorrem de rede, CPU, perda de pacotes ou perfil de mídia inadequado.
-- [ ] Exibir dentro da chamada indicadores e recomendações de qualidade para orientar troca de perfil, redução de resolução ou reconexão quando necessário.
+- [x] Revisar e documentar os fluxos de bootstrap autenticado, mensagens, presença e chamadas que ainda não receberam otimização específica de latência.
+- [x] Diagnosticar os indicadores de qualidade da conexão LiveKit e identificar se os travamentos decorrem de rede, CPU, perda de pacotes ou perfil de mídia inadequado.
+- [x] Exibir dentro da chamada indicadores e recomendações de qualidade para orientar troca de perfil, redução de resolução ou reconexão quando necessário.
 - [x] Ajustar os perfis adaptativos de transmissão para priorizar estabilidade em redes variáveis.
 - [x] Implementar e testar recuperação específica de conexão LiveKit, com estado visível de reconexão e retomada segura após perda temporária de rede.
 - [x] Registrar trechos verificáveis da política de reconexão e do estado visual de reconexão aplicados na sala LiveKit.
@@ -102,21 +103,22 @@
 - [ ] Validar e documentar em chamada real publicada a retomada da transmissão após uma oscilação temporária de rede.
 - [ ] Validar no Render que o perfil 540p estável reduz travamentos e registrar o comportamento de reconexão da transmissão em rede variável.
 - [ ] Diagnosticar e reduzir travamentos e atrasos específicos da transmissão de vídeo e tela compartilhada, sem alterar o perfil de voz que está estável.
-- [ ] Reorganizar a entrada na chamada em uma grade responsiva de participantes, com cartões compactos e hierarquia visual inspirada em clientes de voz modernos.
+- [x] Substituir invalidações globais por atualizações direcionadas por tipo de evento nos fluxos de comunidade, chamadas e mensagens diretas.
+- [x] Reorganizar a entrada na chamada em uma grade responsiva de participantes, com cartões compactos e hierarquia visual inspirada em clientes de voz modernos.
 - [x] Mostrar múltiplas transmissões como miniaturas e permitir expandir uma escolhida no palco, alternar a transmissão visualizada e abrir a transmissão em tela cheia.
-- [ ] Adicionar menus contextuais ao clicar com o botão direito em participante e transmissão para volume individual, silenciamento, parar de assistir e controles de transmissão aplicáveis.
+- [x] Adicionar menus contextuais ao clicar com o botão direito em participante e transmissão para volume individual, silenciamento, parar de assistir e controles de transmissão aplicáveis.
 - [x] Preservar a opção nativa de troca de fonte de compartilhamento quando o navegador suportar surface switching e explicar o limite quando não houver suporte.
 - [x] Ajustar a paleta e os espaçamentos da sala para uma linguagem de interface escura, clara e responsiva, sem reutilizar marcas ou ativos de terceiros.
 - [x] Remover o palco grande automático da transmissão e exibir a tela compartilhada inicialmente como cartão integrado à grade de participantes.
 - [x] Permitir expandir uma transmissão por clique e entrar em tela cheia sem deslocar os controles ou exigir redução do zoom do navegador.
 - [ ] Validar em desktop, tablet e mobile que a grade, as transmissões e os controles permanecem acessíveis com compartilhamento ativo.
-- [ ] Elaborar um plano técnico separado para reduzir travamentos residuais de vídeo/tela após a correção de posicionamento prioritária.
+- [x] Elaborar um plano técnico separado para reduzir travamentos residuais de vídeo/tela após a correção de posicionamento prioritária.
 - [ ] Validar visualmente a sala de chamada ativa em desktop, tablet e mobile, confirmando que dock, palco expandido e painel de opções permanecem acessíveis com compartilhamento de tela aberto.
 - [ ] Capturar evidências verificáveis da chamada ativa com transmissões na grade e palco expandido, incluindo pelo menos desktop e mobile.
 - [ ] Revisar e ajustar a hierarquia visual e o polimento da nova grade da chamada após validação com mídia ativa, caso algum viewport perca legibilidade ou acesso aos controles.
 - [x] Compactar a grade de participantes para reduzir espaços vazios e manter cartões proporcionais à quantidade de pessoas em chamadas largas.
 - [x] Refinar tipografia, espaçamentos, contraste e superfícies da sala para uma hierarquia visual mais madura e consistente.
-- [ ] Reposicionar o dock de controles e tornar as configurações menos dominantes, mantendo ambos acessíveis sem competir com a mídia principal.
+- [x] Reposicionar o dock de controles e tornar as configurações menos dominantes, mantendo ambos acessíveis sem competir com a mídia principal.
 - [ ] Validar visualmente o refinamento da chamada com estados de um participante, múltiplos participantes e configurações abertas antes de publicar.
 - [ ] Validar visualmente a sala de chamada ativa com palco expandido e configurações abertas, confirmando que dock e painel continuam acessíveis em desktop e mobile.
 - [ ] Ajustar o posicionamento do dock e/ou do painel de configurações caso a validação com mídia ativa revele sobreposição, perda de acesso ou competição visual com a transmissão.
@@ -175,3 +177,19 @@
 - [x] Permitir que o criador remova membros da própria comunidade, preservando a proibição de remover a si mesmo pelo fluxo de membros.
 - [x] Substituir as opções temporizadas de convite por geração de um link permanente em um clique.
 - [x] Cobrir por testes as autorizações do criador, a remoção de membros, a exclusão da comunidade e o convite permanente.
+- [x] Definir tokens globais de Liquid Glass / Glassmorphism para superfícies, bordas, brilhos, fundos e estados interativos.
+- [x] Aplicar o sistema Liquid Glass às telas de acesso, navegação, comunidades, mensagens, diálogos e configurações.
+- [x] Adaptar a interface de chamadas e compartilhamento de tela ao novo sistema sem comprometer contraste, controles ou leitura de mídia.
+- [x] Validar o design Liquid Glass em desktop e mobile, incluindo acessibilidade visual e estados de interação.
+- [x] Remover acentos quentes residuais dos diálogos de mensagens diretas e alinhar avatares, ações e estados ao sistema Liquid Glass frio.
+- [x] Aplicar superfícies Liquid Glass explícitas à navegação autenticada, barra de comunidades, lista de canais, cabeçalhos e painel de membros.
+- [x] Transformar a área de conversas autenticada — mensagens, compositor, fixados e estados vazios — com camadas, brilho, bordas e hierarquia Liquid Glass visíveis.
+- [x] Refinar comunidades, administração, mensagens diretas, configurações e chamada para que o padrão Liquid Glass seja perceptível em todos os fluxos autenticados.
+- [ ] Validar visualmente uma sessão autenticada em desktop e mobile, confirmando a consistência real do Liquid Glass além da tela de login.
+- [ ] Enviar ao GitHub a versão Liquid Glass autenticada validada e registrar o commit que será usado pelo Render.
+- [ ] Confirmar que o Render recebeu o commit atualizado antes de repetir a validação visual autenticada.
+- [ ] Validar visualmente em desktop, tablet e mobile a tela compartilhada ativa, confirmando que dock, opções e controles continuam acessíveis sem sobreposição.
+- [ ] Registrar evidências verificáveis do palco de transmissão com compartilhamento ativo e configurações abertas em desktop e mobile antes de considerar o layout concluído.
+- [ ] Medir e registrar sinais verificáveis de travamento e atraso da transmissão — bitrate, jitter, perda, FPS e limitação por CPU ou banda — antes e depois dos ajustes.
+- [ ] Implementar mitigação adicional específica para vídeo e tela quando os diagnósticos indicarem degradação, sem alterar o perfil de voz.
+- [ ] Validar em chamada real publicada que a transmissão de vídeo e tela ficou mais estável após os ajustes e registrar o resultado.

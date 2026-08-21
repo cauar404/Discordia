@@ -7,6 +7,7 @@ import { getDb } from "./db";
 
 export type PlatformUpdate = {
   type: "channel" | "direct" | "community" | "friendship" | "notification" | "call";
+  resource?: "channel" | "message";
   id?: number;
   communityId?: number;
   channelId?: number;

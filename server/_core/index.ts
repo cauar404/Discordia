@@ -3,10 +3,10 @@ import express from "express";
 import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
+import { checkDatabaseAvailability } from "../db";
 import { serveStatic, setupVite } from "./vite";
 import { registerRealtimeServer } from "../realtime";
 
@@ -37,7 +37,13 @@ async function startServer() {
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   registerStorageProxy(app);
-  registerOAuthRoutes(app);
+  app.get("/api/health", async (_req, res) => {
+    const databaseAvailable = await checkDatabaseAvailability();
+    res.status(databaseAvailable ? 200 : 503).json({
+      status: databaseAvailable ? "ok" : "degraded",
+      database: databaseAvailable ? "available" : "unavailable",
+    });
+  });
   // tRPC API
   app.use(
     "/api/trpc",

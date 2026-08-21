@@ -369,7 +369,7 @@ export const platformRouter = router({
         await canManageCommunity(db, input.communityId, ctx.user.id, ctx.user.role, "manage_channels");
         const [created] = await db.insert(channels).values({ ...input, categoryId: input.categoryId ?? null, topic: input.topic ?? null, createdByUserId: ctx.user.id, isPrivate: input.isPrivate ?? false, position: 0 }).$returningId();
         await db.insert(auditLogs).values({ communityId: input.communityId, actorUserId: ctx.user.id, action: "channel.created", targetType: "channel", targetId: String(created.id) });
-        publishPlatformUpdate({ type: "community", communityId: input.communityId, channelId: created.id });
+        publishPlatformUpdate({ type: "channel", resource: "channel", communityId: input.communityId, channelId: created.id });
         return { channelId: created.id };
       }),
     createInvite: protectedProcedure
@@ -598,7 +598,7 @@ export const platformRouter = router({
         ? participants.map(participant => participant.userId)
         : mentionedUserIds.size ? Array.from(mentionedUserIds) : participants.map(participant => participant.userId);
       await Promise.all(recipients.filter(userId => userId !== ctx.user.id).map(userId => db.insert(notifications).values({ userId, type: everyoneMentioned || mentionedUserIds.has(userId) ? "mention" : "message", payload: { channelId: input.channelId, messageId: created.id } })));
-      publishPlatformUpdate({ type: "channel", channelId: input.channelId, communityId: channel.channel.communityId });
+      publishPlatformUpdate({ type: "channel", resource: "message", channelId: input.channelId, communityId: channel.channel.communityId });
       return { messageId: created.id };
     }),
     downloadAttachment: protectedProcedure.input(z.object({ storageKey: z.string().trim().min(1).max(512) })).query(async ({ ctx, input }) => {
@@ -633,7 +633,7 @@ export const platformRouter = router({
       const channel = await getChannelWithAccess(db, message.channelId, ctx.user.id);
       if (message.authorUserId !== ctx.user.id) await canManageCommunity(db, channel.channel.communityId, ctx.user.id, ctx.user.role, "manage_messages");
       await db.update(messages).set({ content: input.content, editedAt: new Date() }).where(eq(messages.id, input.messageId));
-      publishPlatformUpdate({ type: "channel", channelId: message.channelId });
+      publishPlatformUpdate({ type: "channel", resource: "message", channelId: message.channelId });
       return { success: true };
     }),
     pin: protectedProcedure.input(z.object({ messageId: z.number().int().positive(), pinned: z.boolean() })).mutation(async ({ ctx, input }) => {
@@ -645,7 +645,7 @@ export const platformRouter = router({
       await canManageCommunity(db, channel.channel.communityId, ctx.user.id, ctx.user.role, "manage_messages");
       await db.update(messages).set({ isPinned: input.pinned }).where(eq(messages.id, input.messageId));
       await db.insert(auditLogs).values({ communityId: channel.channel.communityId, actorUserId: ctx.user.id, action: input.pinned ? "message.pinned" : "message.unpinned", targetType: "message", targetId: String(input.messageId) });
-      publishPlatformUpdate({ type: "channel", channelId: message.channelId });
+      publishPlatformUpdate({ type: "channel", resource: "message", channelId: message.channelId });
       return { success: true };
     }),
     remove: protectedProcedure.input(z.object({ messageId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
@@ -657,7 +657,7 @@ export const platformRouter = router({
       if (message.authorUserId !== ctx.user.id) await canManageCommunity(db, channel.channel.communityId, ctx.user.id, ctx.user.role, "manage_messages");
       await db.update(messages).set({ deletedAt: new Date() }).where(eq(messages.id, input.messageId));
       await db.insert(auditLogs).values({ communityId: channel.channel.communityId, actorUserId: ctx.user.id, action: "message.deleted", targetType: "message", targetId: String(input.messageId) });
-      publishPlatformUpdate({ type: "channel", channelId: message.channelId });
+      publishPlatformUpdate({ type: "channel", resource: "message", channelId: message.channelId });
       return { success: true };
     }),
     react: protectedProcedure.input(z.object({ messageId: z.number().int().positive(), emoji: z.string().trim().min(1).max(64) })).mutation(async ({ ctx, input }) => {
@@ -667,7 +667,7 @@ export const platformRouter = router({
       if (!message) throw new TRPCError({ code: "NOT_FOUND", message: "Mensagem não encontrada." });
       await getChannelWithAccess(db, message.channelId, ctx.user.id, "add_reactions");
       await db.insert(messageReactions).values({ ...input, userId: ctx.user.id }).onDuplicateKeyUpdate({ set: { emoji: input.emoji } });
-      publishPlatformUpdate({ type: "channel", channelId: message.channelId });
+      publishPlatformUpdate({ type: "channel", resource: "message", channelId: message.channelId });
       return { success: true };
     }),
     markRead: protectedProcedure.input(z.object({ channelId: z.number().int().positive(), lastReadMessageId: z.number().int().positive().nullable() })).mutation(async ({ ctx, input }) => {

@@ -5,19 +5,19 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl border text-sm font-medium shadow-[inset_0_1px_0_rgb(255_255_255_/_0.14),0_10px_28px_rgb(3_8_20_/_0.12)] transition-all duration-200 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] active:scale-[0.97] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
+        default: "border-white/20 bg-[linear-gradient(135deg,rgba(131,145,255,0.98),rgba(80,93,225,0.94))] text-primary-foreground hover:-translate-y-px hover:brightness-110",
         destructive:
-          "bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
+          "border-rose-200/20 bg-[linear-gradient(135deg,rgba(244,80,112,0.92),rgba(190,42,72,0.94))] text-white hover:-translate-y-px hover:brightness-110 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40",
         outline:
-          "border bg-transparent shadow-xs hover:bg-accent dark:bg-transparent dark:border-input dark:hover:bg-input/50",
+          "border-white/14 bg-white/[0.055] shadow-none backdrop-blur-xl hover:-translate-y-px hover:border-white/24 hover:bg-white/[0.11] dark:bg-white/[0.055] dark:border-white/14 dark:hover:bg-white/[0.11]",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+          "border-white/10 bg-white/[0.075] text-secondary-foreground backdrop-blur-xl hover:-translate-y-px hover:bg-white/[0.13]",
         ghost:
-          "hover:bg-accent dark:hover:bg-accent/50",
+          "border-transparent bg-transparent shadow-none hover:bg-white/[0.09] dark:hover:bg-white/[0.09]",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {

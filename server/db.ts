@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import { sql } from "drizzle-orm";
 import { InsertUser, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -16,6 +17,18 @@ export async function getDb() {
     }
   }
   return _db;
+}
+
+export async function checkDatabaseAvailability() {
+  const db = await getDb();
+  if (!db) return false;
+  try {
+    await db.execute(sql`SELECT 1`);
+    return true;
+  } catch {
+    console.warn("[Database] Availability check failed");
+    return false;
+  }
 }
 
 export async function upsertUser(user: InsertUser): Promise<void> {

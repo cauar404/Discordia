@@ -103,6 +103,16 @@ describe("apresentação da transmissão na sala de chamadas", () => {
     expect(callRoomSource).toContain('contentHint: nextQuality.endsWith("60") ? "motion" : "detail"');
   });
 
+  it("oferece menus contextuais para ajustar voz e transmissão sem sair da chamada", () => {
+    expect(callRoomSource).toContain("function ParticipantCard");
+    expect(callRoomSource).toContain("<ContextMenuLabel>Voz de {name}</ContextMenuLabel>");
+    expect(callRoomSource).toContain("<VolumePanel label={`Volume de ${name}`}");
+    expect(callRoomSource).toContain("function ScreenShareCard");
+    expect(callRoomSource).toContain("<ContextMenuLabel>Transmissão de {name}</ContextMenuLabel>");
+    expect(callRoomSource).toContain('onSelect={onStopWatching}>Parar de assistir</ContextMenuItem>');
+    expect(callRoomSource).toContain("Trocar fonte de transmissão");
+  });
+
   it("mantém o último diagnóstico real entre amostras e separa fechar de tela cheia no palco", () => {
     expect(callRoomSource).toContain("const diagnosticSampleRef = useRef");
     expect(callRoomSource).toContain("Amostra interrompida");

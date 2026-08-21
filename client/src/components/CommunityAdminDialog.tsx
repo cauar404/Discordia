@@ -21,7 +21,7 @@ function toBase64(file: File) {
   });
 }
 
-export function CommunityAdminDialog({ communityId, channelId, enabled, canDelete }: { communityId: number; channelId?: number | null; enabled: boolean; canDelete?: boolean }) {
+export function CommunityAdminDialog({ communityId, channelId, enabled, canDelete, triggerLabel, triggerClassName }: { communityId: number; channelId?: number | null; enabled: boolean; canDelete?: boolean; triggerLabel?: string; triggerClassName?: string }) {
   const [open, setOpen] = useState(false);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [selectedRoleId, setSelectedRoleId] = useState("");
@@ -69,7 +69,7 @@ export function CommunityAdminDialog({ communityId, channelId, enabled, canDelet
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild><button title="Administrar comunidade" className="text-slate-500 hover:text-slate-200"><UserRoundCog className="size-4" /></button></DialogTrigger>
+      <DialogTrigger asChild><button title="Administrar comunidade" className={triggerClassName ?? "text-slate-500 hover:text-slate-200"}><UserRoundCog className="size-4" />{triggerLabel && <span>{triggerLabel}</span>}</button></DialogTrigger>
       <DialogContent className="liquid-dialog community-admin-dialog max-h-[90vh] overflow-y-auto border-white/10 bg-[#121722] p-0 text-white sm:max-w-4xl">
         <DialogHeader className="sr-only"><DialogTitle>Administração da comunidade</DialogTitle><DialogDescription>Controles de cargos, convites, moderação e auditoria.</DialogDescription></DialogHeader>
         <Tabs defaultValue="invites" className="p-5">

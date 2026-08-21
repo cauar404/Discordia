@@ -193,3 +193,5 @@
 - [ ] Medir e registrar sinais verificáveis de travamento e atraso da transmissão — bitrate, jitter, perda, FPS e limitação por CPU ou banda — antes e depois dos ajustes.
 - [ ] Implementar mitigação adicional específica para vídeo e tela quando os diagnósticos indicarem degradação, sem alterar o perfil de voz.
 - [ ] Validar em chamada real publicada que a transmissão de vídeo e tela ficou mais estável após os ajustes e registrar o resultado.
+- [x] Exibir no cabeçalho da comunidade um atalho “Gerenciar” apenas para o criador ou administrador, com acesso direto às ações de remover membros e excluir a comunidade.
+- [ ] Confirmar na interface publicada que o criador da comunidade pode remover membros e excluir a própria comunidade com confirmação explícita.

@@ -8,7 +8,19 @@ import { createRequestTimeout } from "@shared/requestTimeout";
 import App from "./App";
 import "./index.css";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // As alterações chegam pelo Socket.IO e invalidam somente a consulta
+      // afetada. Uma janela curta evita que foco e remontagens recarreguem a
+      // mesma tela repetidamente sem atrasar conversas ou presença.
+      staleTime: 15_000,
+      gcTime: 5 * 60_000,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 const reportUnauthorizedError = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;

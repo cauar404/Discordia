@@ -43,13 +43,14 @@ export function DirectMessagesDialog() {
   const [isSomeoneTyping, setIsSomeoneTyping] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const socketRef = useRef<ReturnType<typeof io> | null>(null);
+  const watchedConversationRef = useRef<number | null>(null);
   const callClosingRef = useRef<number | null>(null);
 
   const profile = trpc.platform.profile.me.useQuery(undefined, { enabled: open });
   const directs = trpc.social.directs.list.useQuery(undefined, { enabled: open });
-  const people = trpc.social.people.list.useQuery(undefined, { enabled: open });
-  const messages = trpc.social.directs.messages.useQuery({ conversationId: conversationId ?? 0 }, { enabled: Boolean(conversationId) });
-  const callsConfigured = trpc.social.calls.configured.useQuery(undefined, { enabled: open });
+  const people = trpc.social.people.list.useQuery(undefined, { enabled: open && newConversationOpen });
+  const messages = trpc.social.directs.messages.useQuery({ conversationId: conversationId ?? 0 }, { enabled: open && Boolean(conversationId) });
+  const callsConfigured = trpc.social.calls.configured.useQuery(undefined, { enabled: open && Boolean(conversationId) });
   const activeCall = trpc.social.calls.active.useQuery({ conversationId: conversationId ?? 0 }, { enabled: open && Boolean(conversationId), retry: false });
   const create = trpc.social.directs.create.useMutation({
     onSuccess: async result => {
@@ -87,23 +88,28 @@ export function DirectMessagesDialog() {
 
   useEffect(() => {
     const last = messages.data?.items.at(-1)?.message.id;
-    if (conversationId && last) markRead.mutate({ conversationId, lastReadMessageId: last });
-  }, [conversationId, messages.data?.items, markRead]);
+    if (open && conversationId && last) markRead.mutate({ conversationId, lastReadMessageId: last });
+  }, [open, conversationId, messages.data?.items, markRead]);
+
+  useEffect(() => {
+    watchedConversationRef.current = conversationId;
+    if (conversationId && socketRef.current?.connected) socketRef.current.emit("watch:direct", conversationId);
+  }, [conversationId]);
 
   useEffect(() => {
     if (!open) return;
     const socket = io(realtimeConnectionOptions);
     socketRef.current = socket;
     socket.on("connect", () => {
-      if (conversationId) socket.emit("watch:direct", conversationId);
+      if (watchedConversationRef.current) socket.emit("watch:direct", watchedConversationRef.current);
     });
     socket.on("typing:direct", (event: { conversationId?: number; userId?: number }) => {
-      if (event.conversationId !== conversationId || event.userId === profile.data?.user.id) return;
+      if (event.conversationId !== watchedConversationRef.current || event.userId === profile.data?.user.id) return;
       setIsSomeoneTyping(true);
       window.setTimeout(() => setIsSomeoneTyping(false), 1800);
     });
     socket.on("platform:refresh", (event: { type?: "direct" | "call"; id?: number } = {}) => {
-      if (event.type === "direct" && event.id === conversationId) {
+      if (event.type === "direct" && event.id === watchedConversationRef.current) {
         void utils.social.directs.messages.invalidate();
         void utils.social.directs.list.invalidate();
         return;
@@ -111,7 +117,7 @@ export function DirectMessagesDialog() {
       if (event.type === "call") void utils.social.calls.active.invalidate();
     });
     return () => { socket.disconnect(); socketRef.current = null; };
-  }, [conversationId, open, profile.data?.user.id]);
+  }, [open, profile.data?.user.id, utils]);
 
   const selected = directs.data?.find(item => item.conversation.id === conversationId)?.conversation;
   const label = selected?.title || (selected?.type === "group" ? "Grupo privado" : "Conversa direta");

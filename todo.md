@@ -195,3 +195,12 @@
 - [ ] Validar em chamada real publicada que a transmissão de vídeo e tela ficou mais estável após os ajustes e registrar o resultado.
 - [x] Exibir no cabeçalho da comunidade um atalho “Gerenciar” apenas para o criador ou administrador, com acesso direto às ações de remover membros e excluir a comunidade.
 - [ ] Confirmar na interface publicada que o criador da comunidade pode remover membros e excluir a própria comunidade com confirmação explícita.
+- [x] Medir o tempo de carregamento inicial, consultas tRPC, reconexão em tempo real e renderização para localizar os principais gargalos de lentidão percebida.
+- [x] Habilitar cache de longo prazo para ativos versionados do build, mantendo o HTML e as rotas de API sem cache indevido.
+- [x] Excluir instrumentação de prévia e depuração do build de produção para reduzir o tamanho do HTML inicial entregue pelo Render.
+- [ ] Reduzir o volume e a frequência de dados carregados por comunidade, canais, membros, mensagens e atualizações em tempo real.
+- [x] Configurar cache de curta duração e evitar refetch automático ao voltar à janela, preservando invalidações em tempo real para dados alterados.
+- [x] Adiar consultas auxiliares e estabilizar a conexão de mensagens diretas para evitar trabalho e reconexões fora de foco.
+- [x] Reduzir o polling de chamadas, manter configurações estáveis em cache e restringir o cálculo de amigos em comum aos dois perfis consultados.
+- [ ] Otimizar estados de carregamento e renderizações da interface para manter respostas visuais imediatas em tarefas frequentes.
+- [ ] Comparar medições antes e depois no ambiente publicado e registrar os ganhos e limitações restantes.

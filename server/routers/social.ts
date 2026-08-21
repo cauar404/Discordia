@@ -92,21 +92,22 @@ export const socialRouter = router({
     get: protectedProcedure.input(z.object({ userId: z.number().int().positive() })).query(async ({ ctx, input }) => {
       requireApprovedUser(ctx.user);
       const db = await requireDatabase();
-      const [profile] = await db.select().from(profiles).where(eq(profiles.userId, input.userId)).limit(1);
-      if (!profile) throw new TRPCError({ code: "NOT_FOUND", message: "Perfil não encontrado." });
-      const [relationship] = await db.select().from(friendships).where(or(and(eq(friendships.requesterUserId, ctx.user.id), eq(friendships.recipientUserId, input.userId)), and(eq(friendships.requesterUserId, input.userId), eq(friendships.recipientUserId, ctx.user.id)))).limit(1);
-      const [blocked] = await db.select().from(blockedUsers).where(and(eq(blockedUsers.blockerUserId, ctx.user.id), eq(blockedUsers.blockedUserId, input.userId))).limit(1);
-      const [muted] = await db.select().from(mutedUsers).where(and(eq(mutedUsers.muterUserId, ctx.user.id), eq(mutedUsers.mutedUserId, input.userId))).limit(1);
-      const [myMemberships, theirMemberships, acceptedFriendships] = await Promise.all([
+      const [[profile], [relationship], [blocked], [muted], myMemberships, theirMemberships, myAcceptedFriendships, theirAcceptedFriendships] = await Promise.all([
+        db.select().from(profiles).where(eq(profiles.userId, input.userId)).limit(1),
+        db.select().from(friendships).where(or(and(eq(friendships.requesterUserId, ctx.user.id), eq(friendships.recipientUserId, input.userId)), and(eq(friendships.requesterUserId, input.userId), eq(friendships.recipientUserId, ctx.user.id)))).limit(1),
+        db.select({ id: blockedUsers.id }).from(blockedUsers).where(and(eq(blockedUsers.blockerUserId, ctx.user.id), eq(blockedUsers.blockedUserId, input.userId))).limit(1),
+        db.select({ id: mutedUsers.id }).from(mutedUsers).where(and(eq(mutedUsers.muterUserId, ctx.user.id), eq(mutedUsers.mutedUserId, input.userId))).limit(1),
         db.select({ communityId: communityMembers.communityId }).from(communityMembers).where(eq(communityMembers.userId, ctx.user.id)),
         db.select({ communityId: communityMembers.communityId }).from(communityMembers).where(eq(communityMembers.userId, input.userId)),
-        db.select().from(friendships).where(eq(friendships.status, "accepted")),
+        db.select({ requesterUserId: friendships.requesterUserId, recipientUserId: friendships.recipientUserId }).from(friendships).where(and(eq(friendships.status, "accepted"), or(eq(friendships.requesterUserId, ctx.user.id), eq(friendships.recipientUserId, ctx.user.id)))),
+        db.select({ requesterUserId: friendships.requesterUserId, recipientUserId: friendships.recipientUserId }).from(friendships).where(and(eq(friendships.status, "accepted"), or(eq(friendships.requesterUserId, input.userId), eq(friendships.recipientUserId, input.userId)))),
       ]);
+      if (!profile) throw new TRPCError({ code: "NOT_FOUND", message: "Perfil não encontrado." });
       const myCommunityIds = new Set(myMemberships.map(item => item.communityId));
       const commonCommunityCount = theirMemberships.filter(item => myCommunityIds.has(item.communityId)).length;
-      const friendshipPeers = (userId: number) => new Set(acceptedFriendships.filter(item => item.requesterUserId === userId || item.recipientUserId === userId).map(item => item.requesterUserId === userId ? item.recipientUserId : item.requesterUserId));
-      const myFriends = friendshipPeers(ctx.user.id);
-      const theirFriends = friendshipPeers(input.userId);
+      const friendshipPeers = (items: Array<{ requesterUserId: number; recipientUserId: number }>, userId: number) => new Set(items.map(item => item.requesterUserId === userId ? item.recipientUserId : item.requesterUserId));
+      const myFriends = friendshipPeers(myAcceptedFriendships, ctx.user.id);
+      const theirFriends = friendshipPeers(theirAcceptedFriendships, input.userId);
       const commonFriendCount = Array.from(myFriends).filter(userId => theirFriends.has(userId)).length;
       return { profile, relationship: relationship ?? null, blocked: Boolean(blocked), muted: Boolean(muted), commonCommunityCount, commonFriendCount };
     }),

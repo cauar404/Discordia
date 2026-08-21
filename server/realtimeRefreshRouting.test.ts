@@ -18,7 +18,7 @@ describe("atualizações em tempo real direcionadas", () => {
   it("invalida apenas os dados associados ao evento recebido", () => {
     expect(homeSource).toContain('event.resource === "message" && event.channelId === channelId');
     expect(homeSource).toContain('event.type === "call"');
-    expect(directsSource).toContain('event.type === "direct" && event.id === conversationId');
+    expect(directsSource).toContain('event.type === "direct" && event.id === watchedConversationRef.current');
     expect(directsSource).toContain("utils.social.directs.messages.invalidate()");
   });
 });

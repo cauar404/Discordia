@@ -111,10 +111,10 @@ export default function Home() {
   const channels = trpc.platform.communities.channels.useQuery({ communityId: communityId ?? 0 }, { enabled: Boolean(communityId) });
   const members = trpc.platform.communities.members.useQuery({ communityId: communityId ?? 0 }, { enabled: Boolean(communityId) });
   const messages = trpc.platform.messages.list.useQuery({ channelId: channelId ?? 0 }, { enabled: Boolean(channelId) });
-  const notifications = trpc.social.notifications.list.useQuery(undefined, { enabled: isAuthenticated });
-  const callsConfigured = trpc.social.calls.configured.useQuery(undefined, { enabled: isAuthenticated });
-  const activeCall = trpc.social.calls.active.useQuery({ channelId: channelId ?? 0 }, { enabled: Boolean(channelId) && isAuthenticated, retry: false, refetchInterval: 5_000 });
-  const voicePresence = trpc.social.calls.presenceByCommunity.useQuery({ communityId: communityId ?? 0 }, { enabled: Boolean(communityId) && isAuthenticated, retry: false, refetchInterval: 5_000 });
+  const notifications = trpc.social.notifications.list.useQuery(undefined, { enabled: isAuthenticated, staleTime: 30_000 });
+  const callsConfigured = trpc.social.calls.configured.useQuery(undefined, { enabled: isAuthenticated, staleTime: 5 * 60_000 });
+  const activeCall = trpc.social.calls.active.useQuery({ channelId: channelId ?? 0 }, { enabled: Boolean(channelId) && isAuthenticated, retry: false, refetchInterval: 8_000 });
+  const voicePresence = trpc.social.calls.presenceByCommunity.useQuery({ communityId: communityId ?? 0 }, { enabled: Boolean(communityId) && isAuthenticated, retry: false, refetchInterval: 8_000 });
   const activeCallParticipants = activeCall.data?.participants ?? [];
   const isInCurrentCall = Boolean(call && connectedChannelId === channelId);
   const voiceParticipantsByChannel = useMemo(() => new Map((voicePresence.data ?? []).map(entry => [entry.channelId, entry.participants])), [voicePresence.data]);

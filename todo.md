@@ -211,3 +211,6 @@
 - [ ] Reduzir a demora de ações frequentes — entrada na chamada, envio de mensagens e mudanças de canal — usando confirmação imediata e atualizações em tempo real direcionadas.
 - [ ] Validar com participantes reais, em ambiente publicado, áudio limpo, transmissão de vídeo/jogos e responsividade antes de considerar a correção concluída.
 - [x] Corrigir a prévia de desenvolvimento que devolve HTML para módulos TypeScript após a configuração condicional de plugins Vite.
+- [x] Redesenhar a sala ao entrar em chamada com hierarquia visual compacta, palco e participantes organizados e controles permanentes sem sobreposição.
+- [x] Reestruturar as configurações de chamada em grupos claros de mídia, áudio, transmissão e diagnóstico, com rótulos curtos e estados fáceis de entender.
+- [ ] Validar em desktop e mobile que o novo layout de chamada e as configurações permanecem legíveis, acessíveis e sem quebrar os controles existentes.

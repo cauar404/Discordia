@@ -219,3 +219,8 @@
 - [ ] Validar a transição chamada → chat de texto e a lista de participantes reais com dois usuários em ambiente publicado.
 - [x] Separar estruturalmente a chamada ativa do conteúdo de canais para que navegar, conversar e abrir configurações não quebre a grade da aplicação.
 - [ ] Validar que chamada ativa, chat de texto, troca de canal e minimização coexistem sem deslocamento, tela vazia ou desmontagem da mídia.
+- [x] Auditar componentes, estilos e consultas que ainda geram sensação de lentidão, excesso visual ou comportamento pouco responsivo na interface autenticada.
+- [x] Refinar a linguagem visual para uma identidade sóbria e intencional, removendo gradientes, reflexos e elementos decorativos repetitivos que dão aparência genérica.
+- [x] Reorganizar navegação, cabeçalhos, listas e composição de mensagens com densidade adequada, feedback imediato e responsividade real para desktop, tablet e mobile.
+- [x] Adicionar um navegador de canais acessível no mobile, sem esconder a navegação principal em telas pequenas.
+- [ ] Validar o redesenho em sessão autenticada, incluindo comunidades, chat, mensagens diretas e chamada minimizada, antes de considerar a revisão concluída.

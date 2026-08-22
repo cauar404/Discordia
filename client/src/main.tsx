@@ -7,6 +7,7 @@ import superjson from "superjson";
 import { createRequestTimeout } from "@shared/requestTimeout";
 import App from "./App";
 import "./index.css";
+import "./workspace-refinement.css";
 
 const queryClient = new QueryClient({
   defaultOptions: {

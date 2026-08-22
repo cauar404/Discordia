@@ -174,10 +174,11 @@ export default defineConfig(({ command }) => ({
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
     rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (!id.includes("node_modules")) return;
-          if (id.includes("livekit")) return "livekit";
+          output: {
+            manualChunks(id) {
+              if (!id.includes("node_modules")) return;
+              if (id.includes("@livekit/krisp-noise-filter")) return "krisp-noise-filter";
+              if (id.includes("livekit")) return "livekit";
           if (id.includes("@radix-ui")) return "radix-ui";
           if (id.includes("socket.io-client") || id.includes("engine.io-client")) return "realtime";
           if (id.includes("lucide-react")) return "icons";

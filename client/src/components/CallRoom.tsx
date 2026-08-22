@@ -1,7 +1,7 @@
 import { AudioTrack, VideoTrack, useConnectionState, useLocalParticipant, useParticipants, useTracks, type TrackReference } from "@livekit/components-react";
 import { Activity, AudioLines, ChevronDown, Gauge, Keyboard, Maximize2, Mic, MicOff, Minimize2, MonitorUp, PhoneOff, Radio, ScreenShare, Settings2, SlidersHorizontal, Users, Video, VideoOff, Volume2, VolumeX, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AudioPresets, ConnectionState, Track, VideoQuality } from "livekit-client";
+import { AudioPresets, ConnectionState, LocalAudioTrack, LocalVideoTrack, Track, VideoQuality } from "livekit-client";
 import { cn } from "@/lib/utils";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuLabel, ContextMenuSeparator, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { getScreenSharePublishOptions, screenShareProfiles, type ScreenShareQuality } from "@shared/callQuality";
@@ -112,6 +112,11 @@ export function CallRoom({ kind, onLeave, isMinimized = false, onMinimize, onRes
   const [pushToTalkKey, setPushToTalkKey] = useState(typeof voiceVideoSettings?.pushToTalkKey === "string" ? voiceVideoSettings.pushToTalkKey : "Space");
   const [isChoosingPushToTalkKey, setIsChoosingPushToTalkKey] = useState(false);
   const [isPushToTalkPressed, setIsPushToTalkPressed] = useState(false);
+  const [enhancedNoiseReductionEnabled, setEnhancedNoiseReductionEnabled] = useState(true);
+  const [isNoiseFilterActive, setIsNoiseFilterActive] = useState(false);
+  const [isNoiseFilterPending, setIsNoiseFilterPending] = useState(false);
+  const [noiseReductionError, setNoiseReductionError] = useState<string | null>(null);
+  const [isAdaptiveScreenProtectionActive, setIsAdaptiveScreenProtectionActive] = useState(false);
   const [audioMixes, setAudioMixes] = useState<IndividualAudioMixes>(readStoredMixes);
   const [mediaDiagnostic, setMediaDiagnostic] = useState<CallMediaDiagnostic | null>(null);
   const stageRef = useRef<HTMLElement | null>(null);
@@ -119,11 +124,13 @@ export function CallRoom({ kind, onLeave, isMinimized = false, onMinimize, onRes
   const microphoneSignalRef = useRef<number | undefined>(microphoneToggleSignal);
   const lastCandidatePairRef = useRef<string | null>(null);
   const diagnosticSampleRef = useRef<{ trackKey: string | null; bytes?: number; sampledAt?: number }>({ trackKey: null });
+  const noiseFilterTrackRef = useRef<LocalAudioTrack | null>(null);
   const isEmbeddedPreview = typeof window !== "undefined" && window.top !== window.self;
 
   const tracks = useMemo(() => mediaTracks.filter((track): track is TrackReference => track.publication !== undefined), [mediaTracks]);
   const cameraTracks = useMemo(() => new Map(tracks.filter(track => track.source === Track.Source.Camera).map(track => [track.participant.identity, track])), [tracks]);
   const screenShares = useMemo(() => tracks.filter(track => track.source === Track.Source.ScreenShare), [tracks]);
+  const localScreenShare = useMemo(() => screenShares.find(track => track.participant.identity === localParticipant.identity), [localParticipant.identity, screenShares]);
   const focusedScreenShare = useMemo(() => screenShares.find(track => trackKey(track) === focusedScreenShareKey), [focusedScreenShareKey, screenShares]);
   const remoteAudioTracks = useMemo(() => audioTracks.filter(track => track.participant.identity !== localParticipant.identity), [audioTracks, localParticipant.identity]);
   const voiceTracks = useMemo(() => new Map(remoteAudioTracks.filter(track => track.source === Track.Source.Microphone).map(track => [track.participant.identity, track])), [remoteAudioTracks]);
@@ -143,6 +150,14 @@ export function CallRoom({ kind, onLeave, isMinimized = false, onMinimize, onRes
       publication.setVideoQuality(trackKey(screenShare) === focusedScreenShareKey ? VideoQuality.HIGH : VideoQuality.MEDIUM);
     }
   }, [focusedScreenShareKey, screenShares]);
+  useEffect(() => {
+    const localScreenTrack = localScreenShare?.publication?.track;
+    if (!(localScreenTrack instanceof LocalVideoTrack)) { setIsAdaptiveScreenProtectionActive(false); return; }
+    const shouldProtectMotion = mediaDiagnostic?.status === "degraded";
+    localScreenTrack.setPublishingQuality(shouldProtectMotion ? VideoQuality.MEDIUM : VideoQuality.HIGH);
+    void localScreenTrack.setDegradationPreference(shouldProtectMotion ? "maintain-framerate" : "maintain-resolution").catch(() => undefined);
+    setIsAdaptiveScreenProtectionActive(shouldProtectMotion);
+  }, [localScreenShare, mediaDiagnostic?.status]);
   useEffect(() => {
     try { window.localStorage.setItem(INDIVIDUAL_AUDIO_MIX_STORAGE_KEY, serializeIndividualAudioMixes(audioMixes)); } catch { /* armazenamento local pode estar indisponível */ }
   }, [audioMixes]);
@@ -190,6 +205,45 @@ export function CallRoom({ kind, onLeave, isMinimized = false, onMinimize, onRes
     setPushToTalkEnabled(voiceVideoSettings?.pushToTalk === true);
     if (typeof voiceVideoSettings?.pushToTalkKey === "string") setPushToTalkKey(voiceVideoSettings.pushToTalkKey);
   }, [voiceVideoSettings?.pushToTalk, voiceVideoSettings?.pushToTalkKey]);
+  useEffect(() => {
+    let cancelled = false;
+    let startTimer: number | undefined;
+    const publication = localParticipant.getTrackPublication(Track.Source.Microphone);
+    const microphoneTrack = publication?.track;
+    if (!isMicrophoneEnabled || !(microphoneTrack instanceof LocalAudioTrack)) {
+      setIsNoiseFilterActive(false);
+      return;
+    }
+    const configureNoiseReduction = async () => {
+      setIsNoiseFilterPending(true);
+      try {
+        if (!enhancedNoiseReductionEnabled) {
+          if (noiseFilterTrackRef.current === microphoneTrack) await microphoneTrack.stopProcessor();
+          if (!cancelled) { noiseFilterTrackRef.current = null; setIsNoiseFilterActive(false); setNoiseReductionError(null); }
+          return;
+        }
+        const { KrispNoiseFilter, isKrispNoiseFilterSupported } = await import("@livekit/krisp-noise-filter");
+        if (!isKrispNoiseFilterSupported()) throw new Error("unsupported");
+        if (cancelled) return;
+        if (noiseFilterTrackRef.current !== microphoneTrack) await microphoneTrack.setProcessor(KrispNoiseFilter());
+        if (cancelled) { await microphoneTrack.stopProcessor(); return; }
+        noiseFilterTrackRef.current = microphoneTrack;
+        setIsNoiseFilterActive(true);
+        setNoiseReductionError(null);
+      } catch {
+        if (!cancelled) {
+          noiseFilterTrackRef.current = null;
+          setEnhancedNoiseReductionEnabled(false);
+          setIsNoiseFilterActive(false);
+          setNoiseReductionError("A filtragem avançada de ruído não é compatível com este navegador ou dispositivo. A redução padrão de ruído e eco continua ativa.");
+        }
+      } finally {
+        if (!cancelled) setIsNoiseFilterPending(false);
+      }
+    };
+    startTimer = window.setTimeout(() => { void configureNoiseReduction(); }, 1_000);
+    return () => { cancelled = true; if (startTimer !== undefined) window.clearTimeout(startTimer); };
+  }, [enhancedNoiseReductionEnabled, isMicrophoneEnabled, localParticipant]);
   useEffect(() => {
     const syncFullscreenState = () => setIsStageFullscreen(document.fullscreenElement === stageRef.current);
     document.addEventListener("fullscreenchange", syncFullscreenState);
@@ -313,9 +367,10 @@ export function CallRoom({ kind, onLeave, isMinimized = false, onMinimize, onRes
       <summary><span><Settings2 className="size-4" /> Configurações da chamada</span><ChevronDown className="size-4" /></summary>
       <div className="call-settings-content">
         <div className="call-settings-grid">
-          <div className="call-settings-card"><div className="call-setting-title"><Gauge className="size-4" /><div><strong>Qualidade da transmissão</strong><p>{activeQuality ? `Meta ativa: ${screenShareProfiles[activeQuality].label}` : "720p a 60 fps é o padrão para vídeo e jogos; use 1080p a 60 fps em rede estável."}</p></div></div><div className="call-setting-actions"><label className="sr-only" htmlFor="screen-share-quality">Qualidade da tela compartilhada</label><select id="screen-share-quality" value={quality} onChange={event => setQuality(event.target.value as ScreenShareQuality)} disabled={isUpdatingShare} className="call-quality-select"><option value="540p30">540p · estável</option><option value="720p30">720p · equilibrado</option><option value="1080p30">1080p · equilibrado</option><option value="720p60">720p · 60 fps</option><option value="1080p60">1080p · 60 fps</option></select>{isScreenShareEnabled && activeQuality !== quality && <button type="button" className="call-secondary-button" onClick={() => void applyQuality()} disabled={isUpdatingShare}>Aplicar</button>}</div></div>
+          <div className="call-settings-card"><div className="call-setting-title"><Gauge className="size-4" /><div><strong>Qualidade da transmissão</strong><p>{isAdaptiveScreenProtectionActive ? "Proteção adaptativa ativa: a camada máxima foi reduzida para preservar fluidez durante o congestionamento." : activeQuality ? `Meta ativa: ${screenShareProfiles[activeQuality].label}` : "720p a 60 fps é o padrão para vídeo e jogos; use 1080p a 60 fps em rede estável."}</p></div></div><div className="call-setting-actions"><label className="sr-only" htmlFor="screen-share-quality">Qualidade da tela compartilhada</label><select id="screen-share-quality" value={quality} onChange={event => setQuality(event.target.value as ScreenShareQuality)} disabled={isUpdatingShare} className="call-quality-select"><option value="540p30">540p · estável</option><option value="720p30">720p · equilibrado</option><option value="1080p30">1080p · equilibrado</option><option value="720p60">720p · 60 fps</option><option value="1080p60">1080p · 60 fps</option></select>{isScreenShareEnabled && activeQuality !== quality && <button type="button" className="call-secondary-button" onClick={() => void applyQuality()} disabled={isUpdatingShare}>Aplicar</button>}</div></div>
           <div className="call-settings-card"><div className="call-setting-title"><AudioLines className="size-4" /><div><strong>Áudio na transmissão</strong><p>O navegador só captura quando oferece uma trilha de áudio.</p></div></div><label className="call-share-audio-toggle"><input type="checkbox" checked={includeScreenShareAudio} onChange={event => setIncludeScreenShareAudio(event.target.checked)} disabled={isScreenShareEnabled || isUpdatingShare} /><span>Incluir áudio</span></label></div>
-          <div className="call-settings-card"><div className="call-setting-title"><Keyboard className="size-4" /><div><strong>Microfone</strong><p>{pushToTalkEnabled ? `Aperte ${pushToTalkKeyLabel(pushToTalkKey)} para falar.` : "Redução de ruído e eco ativada quando o navegador oferece suporte."}</p></div></div><div className="call-setting-actions"><button type="button" className={cn("call-secondary-button", pushToTalkEnabled && "is-active")} onClick={() => void togglePushToTalk()}>{pushToTalkEnabled ? "Aperte para falar" : "Ativar aperte para falar"}</button>{pushToTalkEnabled && <button type="button" className={cn("call-secondary-button", isChoosingPushToTalkKey && "is-active")} onClick={() => setIsChoosingPushToTalkKey(true)}>{isChoosingPushToTalkKey ? "Pressione uma tecla…" : `Tecla: ${pushToTalkKeyLabel(pushToTalkKey)}`}</button>}</div></div>
+          <div className="call-settings-card"><div className="call-setting-title"><Keyboard className="size-4" /><div><strong>Microfone</strong><p>{pushToTalkEnabled ? `Aperte ${pushToTalkKeyLabel(pushToTalkKey)} para falar.` : "Redução de ruído e eco do navegador ativada para a voz."}</p></div></div><div className="call-setting-actions"><button type="button" className={cn("call-secondary-button", pushToTalkEnabled && "is-active")} onClick={() => void togglePushToTalk()}>{pushToTalkEnabled ? "Aperte para falar" : "Ativar aperte para falar"}</button>{pushToTalkEnabled && <button type="button" className={cn("call-secondary-button", isChoosingPushToTalkKey && "is-active")} onClick={() => setIsChoosingPushToTalkKey(true)}>{isChoosingPushToTalkKey ? "Pressione uma tecla…" : `Tecla: ${pushToTalkKeyLabel(pushToTalkKey)}`}</button>}</div></div>
+          <div className="call-settings-card"><div className="call-setting-title"><AudioLines className="size-4" /><div><strong>Limpeza de voz</strong><p>{isNoiseFilterPending ? "Preparando o filtro avançado…" : isNoiseFilterActive ? "Filtro Krisp ativo antes de a sua voz ser enviada à chamada." : noiseReductionError ?? "A redução padrão de ruído e eco do navegador está ativa."}</p></div></div><label className="call-share-audio-toggle"><input type="checkbox" checked={enhancedNoiseReductionEnabled} onChange={event => { setNoiseReductionError(null); setEnhancedNoiseReductionEnabled(event.target.checked); }} disabled={!isMicrophoneEnabled || isNoiseFilterPending} /><span>{isNoiseFilterActive ? "Krisp ativo" : "Ativar filtro avançado"}</span></label></div>
           {diagnosticScreenShare && <div className="call-settings-card call-diagnostics-card"><div className="call-setting-title"><Activity className="size-4" /><div><strong>Diagnóstico da transmissão</strong><p>{mediaDiagnostic?.recommendation ?? "Aguardando métricas locais da transmissão…"}</p></div></div><div className="call-diagnostics-summary"><span className={cn("call-diagnostic-status", `is-${mediaDiagnostic?.status ?? "unavailable"}`)}>{mediaDiagnostic?.label ?? "Aguardando amostra"}</span><div className="call-diagnostic-metrics"><span>RTT <strong>{formatMediaMetric(mediaDiagnostic?.roundTripTimeMs, " ms")}</strong></span><span>Jitter <strong>{formatMediaMetric(mediaDiagnostic?.jitterMs, " ms")}</strong></span><span>Perda <strong>{formatMediaMetric(mediaDiagnostic?.packetLossPercent, "%")}</strong></span><span>Bitrate <strong>{formatMediaMetric(mediaDiagnostic?.bitrateKbps, " kbps")}</strong></span><span>FPS <strong>{formatMediaMetric(mediaDiagnostic?.framesPerSecond, "")}</strong></span></div></div></div>}
         </div>
         <div className="call-stream-mixer"><div className="call-stream-mixer-heading"><SlidersHorizontal className="size-4" /><div><strong>Mixer de transmissão</strong><p>O volume abaixo afeta apenas este dispositivo. Também está disponível ao clicar com o botão direito em uma transmissão.</p></div></div>{screenShareAudioTracks.length ? screenShareAudioTracks.map(track => <div key={trackKey(track)} className="call-stream-audio-row"><div className="call-stream-audio-title"><AudioLines className="size-4" /><span><strong>{displayName(track.participant)}</strong><small>Áudio da transmissão</small></span></div><button type="button" className={cn("call-mini-mute", mixFor(track).muted && "is-muted")} onClick={() => updateMix(track, { muted: !mixFor(track).muted })} aria-label="Alternar áudio da transmissão">{mixFor(track).muted ? <VolumeX className="size-3.5" /> : <Volume2 className="size-3.5" />}</button><input type="range" min="0" max="100" step="1" value={Math.round(mixFor(track).volume * 100)} onChange={event => updateMix(track, { volume: Number(event.target.value) / 100 })} aria-label={`Volume da transmissão de ${displayName(track.participant)}`} /><output>{Math.round(mixFor(track).volume * 100)}%</output></div>) : <p className="call-empty-mixer">Quando alguém compartilhar uma aba com áudio, o volume individual aparecerá aqui.</p>}</div>

@@ -1,7 +1,17 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { collectCallMediaMetrics, diagnoseCallMedia, formatMediaMetric } from "../shared/callMediaDiagnostics";
 
+const callRoomSource = readFileSync(resolve(import.meta.dirname, "../client/src/components/CallRoom.tsx"), "utf8");
+
 describe("diagnóstico de transmissão", () => {
+  it("reduz temporariamente a camada do publicador quando a telemetria aponta congestionamento", () => {
+    expect(callRoomSource).toContain("localScreenTrack.setPublishingQuality(shouldProtectMotion ? VideoQuality.MEDIUM : VideoQuality.HIGH)");
+    expect(callRoomSource).toContain('setDegradationPreference(shouldProtectMotion ? "maintain-framerate" : "maintain-resolution")');
+    expect(callRoomSource).toContain("Proteção adaptativa ativa");
+  });
+
   it("sinaliza rota instável por perda, jitter ou RTT elevado", () => {
     expect(diagnoseCallMedia({ packetLossPercent: 3.2 }).status).toBe("degraded");
     expect(diagnoseCallMedia({ jitterMs: 40 }).label).toBe("Rota instável");

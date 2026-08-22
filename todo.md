@@ -191,7 +191,7 @@
 - [ ] Validar visualmente em desktop, tablet e mobile a tela compartilhada ativa, confirmando que dock, opções e controles continuam acessíveis sem sobreposição.
 - [ ] Registrar evidências verificáveis do palco de transmissão com compartilhamento ativo e configurações abertas em desktop e mobile antes de considerar o layout concluído.
 - [ ] Medir e registrar sinais verificáveis de travamento e atraso da transmissão — bitrate, jitter, perda, FPS e limitação por CPU ou banda — antes e depois dos ajustes.
-- [ ] Implementar mitigação adicional específica para vídeo e tela quando os diagnósticos indicarem degradação, sem alterar o perfil de voz.
+- [x] Implementar mitigação adicional específica para vídeo e tela quando os diagnósticos indicarem degradação, sem alterar o perfil de voz.
 - [ ] Validar em chamada real publicada que a transmissão de vídeo e tela ficou mais estável após os ajustes e registrar o resultado.
 - [x] Exibir no cabeçalho da comunidade um atalho “Gerenciar” apenas para o criador ou administrador, com acesso direto às ações de remover membros e excluir a comunidade.
 - [ ] Confirmar na interface publicada que o criador da comunidade pode remover membros e excluir a própria comunidade com confirmação explícita.
@@ -204,3 +204,10 @@
 - [x] Reduzir o polling de chamadas, manter configurações estáveis em cache e restringir o cálculo de amigos em comum aos dois perfis consultados.
 - [ ] Otimizar estados de carregamento e renderizações da interface para manter respostas visuais imediatas em tarefas frequentes.
 - [ ] Comparar medições antes e depois no ambiente publicado e registrar os ganhos e limitações restantes.
+- [ ] Auditar em chamada real a supressão de ruído, o áudio de voz, a transmissão de YouTube e jogos, além de RTT, jitter, perda, FPS e bitrate por participante.
+- [ ] Corrigir a publicação e a recepção de tela para privilegiar fluidez e qualidade em vídeo e jogos, com adaptação baseada em métricas reais e sem reduzir a estabilidade da voz.
+- [x] Aplicar redução automática e reversível da camada de vídeo local quando RTT, jitter, perda ou limitação de banda indicarem congestionamento durante a transmissão.
+- [x] Corrigir o processamento local de voz para aplicar supressão de ruído, cancelamento de eco e controle automático de ganho quando suportados pelo navegador e pelo dispositivo.
+- [ ] Reduzir a demora de ações frequentes — entrada na chamada, envio de mensagens e mudanças de canal — usando confirmação imediata e atualizações em tempo real direcionadas.
+- [ ] Validar com participantes reais, em ambiente publicado, áudio limpo, transmissão de vídeo/jogos e responsividade antes de considerar a correção concluída.
+- [x] Corrigir a prévia de desenvolvimento que devolve HTML para módulos TypeScript após a configuração condicional de plugins Vite.

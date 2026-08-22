@@ -214,3 +214,8 @@
 - [x] Redesenhar a sala ao entrar em chamada com hierarquia visual compacta, palco e participantes organizados e controles permanentes sem sobreposição.
 - [x] Reestruturar as configurações de chamada em grupos claros de mídia, áudio, transmissão e diagnóstico, com rótulos curtos e estados fáceis de entender.
 - [ ] Validar em desktop e mobile que o novo layout de chamada e as configurações permanecem legíveis, acessíveis e sem quebrar os controles existentes.
+- [x] Corrigir a navegação para canais de texto durante chamada ativa, preservando a sala LiveKit e a casca visual sem desmontagem ou quebra de layout.
+- [x] Eliminar presença fantasma em canais de voz, usando somente participantes ativos e atualizando a interface imediatamente após entrada, saída ou encerramento.
+- [ ] Validar a transição chamada → chat de texto e a lista de participantes reais com dois usuários em ambiente publicado.
+- [x] Separar estruturalmente a chamada ativa do conteúdo de canais para que navegar, conversar e abrir configurações não quebre a grade da aplicação.
+- [ ] Validar que chamada ativa, chat de texto, troca de canal e minimização coexistem sem deslocamento, tela vazia ou desmontagem da mídia.

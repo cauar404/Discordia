@@ -1,4 +1,4 @@
-import { AccessToken } from "livekit-server-sdk";
+import { AccessToken, RoomServiceClient } from "livekit-server-sdk";
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq, inArray, isNull, or } from "drizzle-orm";
 import { z } from "zod";
@@ -80,6 +80,25 @@ function liveKitConfiguration() {
     throw new TRPCError({ code: "PRECONDITION_FAILED", message: "A infraestrutura de chamadas ainda não foi configurada." });
   }
   return { url, apiKey, apiSecret };
+}
+
+function liveKitRoomService() {
+  const configuration = liveKitConfiguration();
+  const apiUrl = configuration.url.replace(/^wss:/, "https:").replace(/^ws:/, "http:");
+  return new RoomServiceClient(apiUrl, configuration.apiKey, configuration.apiSecret);
+}
+
+async function liveParticipantIdsByCall(activeCalls: Array<{ id: number; providerRoomName: string }>) {
+  if (!activeCalls.length || !process.env.LIVEKIT_URL || !process.env.LIVEKIT_API_KEY || !process.env.LIVEKIT_API_SECRET) return null;
+  try {
+    const roomService = liveKitRoomService();
+    const entries = await Promise.all(activeCalls.map(async call => [call.id, new Set((await roomService.listParticipants(call.providerRoomName)).map(participant => participant.identity))] as const));
+    return new Map(entries);
+  } catch {
+    // A presença persistida continua como fallback durante uma indisponibilidade
+    // administrativa temporária. Não removemos membros por uma falha de consulta.
+    return null;
+  }
 }
 
 export const socialRouter = router({
@@ -345,10 +364,12 @@ export const socialRouter = router({
       const voiceChannels = await db.select({ id: channels.id }).from(channels).where(and(eq(channels.communityId, input.communityId), eq(channels.type, "voice")));
       if (!voiceChannels.length) return [];
       const channelIds = voiceChannels.map(channel => channel.id);
-      const activeCalls = await db.select({ id: calls.id, channelId: calls.channelId }).from(calls).where(and(inArray(calls.channelId, channelIds), inArray(calls.status, ["ringing", "active"])));
+      const activeCalls = await db.select({ id: calls.id, channelId: calls.channelId, providerRoomName: calls.providerRoomName }).from(calls).where(and(inArray(calls.channelId, channelIds), inArray(calls.status, ["ringing", "active"])));
       if (!activeCalls.length) return [];
       const participants = await db.select({ callId: callParticipants.callId, userId: callParticipants.userId, displayName: profiles.displayName, avatarKey: profiles.avatarKey }).from(callParticipants).leftJoin(profiles, eq(profiles.userId, callParticipants.userId)).where(and(inArray(callParticipants.callId, activeCalls.map(call => call.id)), isNull(callParticipants.leftAt))).orderBy(callParticipants.joinedAt);
-      return groupVoiceCallPresence(activeCalls, participants);
+      const liveParticipants = await liveParticipantIdsByCall(activeCalls);
+      const connectedParticipants = liveParticipants ? participants.filter(participant => liveParticipants.get(participant.callId)?.has(String(participant.userId))) : participants;
+      return groupVoiceCallPresence(activeCalls, connectedParticipants);
     }),
     active: protectedProcedure.input(z.object({ channelId: z.number().int().positive().nullable().optional(), conversationId: z.number().int().positive().nullable().optional() }).refine(input => Boolean(input.channelId) !== Boolean(input.conversationId), "Escolha um canal ou uma conversa direta.")).query(async ({ ctx, input }) => {
       requireApprovedUser(ctx.user);
@@ -359,7 +380,10 @@ export const socialRouter = router({
       const [call] = await db.select().from(calls).where(and(scope, inArray(calls.status, ["ringing", "active"]))).orderBy(desc(calls.createdAt)).limit(1);
       if (!call) return null;
       const participants = await db.select({ userId: callParticipants.userId, displayName: profiles.displayName, avatarKey: profiles.avatarKey }).from(callParticipants).leftJoin(profiles, eq(profiles.userId, callParticipants.userId)).where(and(eq(callParticipants.callId, call.id), isNull(callParticipants.leftAt))).orderBy(callParticipants.joinedAt);
-      return { call, participants, isCurrentUserInCall: participants.some(participant => participant.userId === ctx.user.id) };
+      const liveParticipants = await liveParticipantIdsByCall([{ id: call.id, providerRoomName: call.providerRoomName }]);
+      const connectedParticipants = liveParticipants ? participants.filter(participant => liveParticipants.get(call.id)?.has(String(participant.userId))) : participants;
+      if (liveParticipants && !connectedParticipants.length) return null;
+      return { call, participants: connectedParticipants, isCurrentUserInCall: connectedParticipants.some(participant => participant.userId === ctx.user.id) };
     }),
     start: protectedProcedure.input(z.object({ kind: z.enum(["voice", "video"]), channelId: z.number().int().positive().nullable().optional(), conversationId: z.number().int().positive().nullable().optional() }).refine(input => Boolean(input.channelId) !== Boolean(input.conversationId), "Escolha um canal ou uma conversa direta.")).mutation(async ({ ctx, input }) => {
       requireApprovedUser(ctx.user);
